@@ -3,7 +3,7 @@ import com.android.build.api.dsl.ApplicationExtension
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.serialization") version "2.1.20"
 }
 
 android {
@@ -105,10 +105,10 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
 
     // 数据处理的库
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.12.1")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1")
     implementation(files("libs/protobuf-java-3.5.1.jar"))
 
     // UI交互的库
