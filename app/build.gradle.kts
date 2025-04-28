@@ -105,7 +105,7 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
 
     // 数据处理的库
-    implementation("com.google.code.gson:gson:2.13.0")
+    implementation("com.google.code.gson:gson:2.13.1")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1")
