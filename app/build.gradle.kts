@@ -114,7 +114,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1")
     implementation(files("libs/protobuf-java-3.5.1.jar"))
-    implementation("com.tencent:mmkv:2.1.0")
+    implementation("com.tencent:mmkv:2.2.1")
 
     // UI交互的库
     implementation("com.rengwuxian.materialedittext:library:2.1.4")
