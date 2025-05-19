@@ -3,7 +3,7 @@ import com.android.build.api.dsl.ApplicationExtension
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.21"
 }
 
 android {
@@ -101,7 +101,7 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
 
     implementation("com.google.code.gson:gson:2.13.1")
-    implementation("com.google.protobuf:protobuf-java:4.30.2")
+    implementation("com.google.protobuf:protobuf-java:4.31.0")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
