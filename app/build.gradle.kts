@@ -185,7 +185,7 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
 
     implementation("com.google.code.gson:gson:2.13.1")
-    implementation("com.google.protobuf:protobuf-java:4.31.0")
+    implementation("com.google.protobuf:protobuf-java:4.31.1")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
