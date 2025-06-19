@@ -3,9 +3,9 @@ package moe.ore.xposed.base
 interface IBaseHook {
     fun init() {}
     val enabled: Boolean
-        get() = false
+        get() = true
     val isCompatible: Boolean
-        get() = false
+        get() = true
     val description: String
-        get() = ""
+        get() = "default description"
 }

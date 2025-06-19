@@ -17,12 +17,14 @@ import moe.ore.xposed.hook.base.hostAndroidId
 import moe.ore.xposed.hook.base.hostApp
 import moe.ore.xposed.hook.base.hostAppName
 import moe.ore.xposed.hook.base.hostClassLoader
+import moe.ore.xposed.hook.base.hostInit
 import moe.ore.xposed.hook.base.hostPackageName
 import moe.ore.xposed.hook.base.hostProcessName
 import moe.ore.xposed.hook.base.hostVersionCode
 import moe.ore.xposed.hook.base.hostVersionName
 import moe.ore.xposed.hook.base.moduleClassLoader
 import moe.ore.xposed.hook.enums.QQTypeEnum
+import moe.ore.xposed.hooks.ListenTXHookUpdate
 import moe.ore.xposed.utils.FuzzySearchClass
 import moe.ore.xposed.utils.XPClassloader
 import moe.ore.xposed.utils.afterHook
@@ -68,8 +70,11 @@ object LoadApp {
                 }
 
                 val app: Context = field.get(null) as Context
-                hostApp = app as Application
+                if (!hostInit) {
+                    hostApp = app as Application
+                }
                 hostClassLoader = hostApp.classLoader
+
                 execStartupInit(app)
 
                 if (ProcUtil.isMain) {
@@ -148,6 +153,11 @@ object LoadApp {
     private fun execStartupInit(ctx: Context) {
         val classLoader = ctx.classLoader.also { requireNotNull(it) }
         XPClassloader.hostClassLoader = classLoader
+
+        initHooks(
+            // list
+            ListenTXHookUpdate,
+        )
 
         if (injectClassloader(moduleClassLoader)) {
             // TODO 先暂时用原来的，后面再改
