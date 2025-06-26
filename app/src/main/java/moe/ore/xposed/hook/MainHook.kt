@@ -57,7 +57,7 @@ object MainHook {
     private val tlv_t = XPClassloader.load("oicq.wlogin_sdk.tlv_type.tlv_t")!!
     private val MD5 = XPClassloader.load("oicq.wlogin_sdk.tools.MD5")!!
     private val HighwaySessionData = XPClassloader.load("com.tencent.mobileqq.highway.openup.SessionInfo")!!
-    private val MSFKernel = XPClassloader.load("com.tencent.mobileqq.msfcore.MSFKernel")
+    // private val MSFKernel = XPClassloader.load("com.tencent.mobileqq.msfcore.MSFKernel")
 
     lateinit var unhook: XC_MethodHook.Unhook
     val hasUnhook get() = ::unhook.isInitialized
@@ -137,7 +137,7 @@ object MainHook {
     }
 
     private fun hookMSFKernelSend() {
-        MSFKernel?.hookMethod("sendPacket")?.after {
+        /*MSFKernel?.hookMethod("sendPacket")?.after {
             val from = it.args[0]
             if (from.javaClass.name == "com.tencent.mobileqq.msfcore.MSFRequestAdapter") {
                 val cmdField = from.javaClass.getDeclaredField("mCmd").also { it.isAccessible = true }
@@ -164,7 +164,7 @@ object MainHook {
                     HttpUtil.sendTo(defaultUri, value, source)
                 }
             }
-        }
+        }*/
     }
 
     private fun hookBDH() {
@@ -620,7 +620,12 @@ object MainHook {
     }
 
     private fun hookSendPacket() {
-        CodecWarpper.hookMethod("encodeRequest")?.after { param ->
+        CodecWarpper.hookMethod("encodeRequest")?.before {
+            /*val cmd = it.args[5] as String
+            if (!cmd.startsWith("trpc.o3.ecdh_access.EcdhAccess.SsoSecure")) {
+                it.result = Unit
+            }*/
+        }?.after { param ->
             val args = param.args
             when (args.size) {
                 17, 14, 16, 15 -> {
