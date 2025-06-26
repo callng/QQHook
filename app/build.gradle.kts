@@ -192,6 +192,7 @@ dependencies {
     implementation(libs.google.gson)
     implementation(libs.google.protobuf)
     implementation(libs.kotlinx.io.jvm)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.serialization.protobuf)
     implementation(libs.materialedittext.library)
     implementation(libs.okhttp3.okhttp)

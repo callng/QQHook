@@ -1,11 +1,12 @@
 [versions]
-agp = "8.10.1"
+agp = "8.11.0"
 appcompat = "1.7.1"
 constraintlayout = "2.2.1"
 core-ktx = "1.16.0"
 ezxhelper = "3.0.0-preview4"
 gson = "2.13.1"
 kotlin = "2.2.0"
+kotlinx-json = "1.8.1"
 kotlinx-io-jvm = "0.1.16"
 kotlinx-protobuf = "1.8.1"
 material = "1.12.0"
@@ -27,6 +28,7 @@ ezxhelper-xposed-api = { module = "io.github.kyuubiran.ezxhelper:xposed-api-82",
 google-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 google-protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
 kotlinx-io-jvm = { module = "org.jetbrains.kotlinx:kotlinx-io-jvm", version.ref = "kotlinx-io-jvm" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-json" }
 kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-protobuf" }
 materialedittext-library = { module = "com.rengwuxian.materialedittext:library", version.ref = "materialedittext" }
 okhttp3-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
