@@ -16,7 +16,7 @@ plugins {
 val appVerCode: Int by lazy {
     getGitCommitCount()
 }
-val appVerName: String = "3.2.2" + ".r${getGitCommitCount()}." + getVersionName()
+val appVerName: String = "3.2.3" + ".r${getGitCommitCount()}." + getVersionName()
 
 android {
     namespace = "moe.ore.txhook"
