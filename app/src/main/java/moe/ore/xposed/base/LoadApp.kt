@@ -161,8 +161,10 @@ object LoadApp {
 
         if (injectClassloader(moduleClassLoader)) {
             // TODO 先暂时用原来的，后面再改
+
+            AntiDetection() // 由于进程作用域不同，现在它不能放进isMsf的判断中
+
             if (ProcUtil.isMsf) {
-                AntiDetection()
                 MainHook(0, ctx)
             }
         }
