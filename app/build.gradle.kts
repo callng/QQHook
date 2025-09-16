@@ -1,22 +1,40 @@
-import com.android.build.api.dsl.ApkSigningConfig
-import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
-import java.io.FileInputStream
-import java.security.KeyStore
-import java.security.MessageDigest
-import java.util.Locale
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
 
-val appVerCode: Int by lazy {
-    getGitCommitCount()
+abstract class GitCommitCount : ValueSource<Int, ValueSourceParameters.None> {
+    @get:Inject abstract val execOperations: ExecOperations
+
+    override fun obtain(): Int {
+        val output = ByteArrayOutputStream()
+        execOperations.exec {
+            commandLine("git", "rev-list", "--count", "HEAD")
+            standardOutput = output
+        }
+        return output.toString().trim().toInt()
+    }
 }
-val appVerName: String = "3.2.3" + ".r${getGitCommitCount()}." + getVersionName()
+
+abstract class GitShortHash : ValueSource<String, ValueSourceParameters.None> {
+    @get:Inject abstract val execOperations: ExecOperations
+
+    override fun obtain(): String {
+        val output = ByteArrayOutputStream()
+        execOperations.exec {
+            commandLine("git", "rev-parse", "--short=7", "HEAD")
+            standardOutput = output
+        }
+        return output.toString().trim()
+    }
+}
+
+val gitCommitCount = providers.of(GitCommitCount::class.java) {}
+val gitShortHash = providers.of(GitShortHash::class.java) {}
 
 android {
     namespace = "moe.ore.txhook"
@@ -26,8 +44,8 @@ android {
         applicationId = "moe.ore.txhook"
         minSdk = 24
         targetSdk = 36
-        versionCode = appVerCode
-        versionName = appVerName
+        versionCode = providers.provider { getBuildVersionCode(rootProject) }.get()
+        versionName = "3.2.3"
     }
 
     compileOptions {
@@ -35,8 +53,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
@@ -44,9 +64,41 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        debug {
+            val gitSuffix = providers.provider { getGitHeadRefsSuffix(rootProject, "debug") }.get()
+            versionNameSuffix = ".${gitSuffix}"
+        }
+        release {
+            val keystorePath: String? = System.getenv("KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                signingConfigs {
+                    create("release") {
+                        storeFile = file(keystorePath)
+                        storePassword = System.getenv("KEYSTORE_PASSWORD")
+                        keyAlias = System.getenv("KEY_ALIAS")
+                        keyPassword = System.getenv("KEY_PASSWORD")
+                        enableV2Signing = true
+                    }
+                }
+            }
+
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isCrunchPngs = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            val gitSuffix = providers.provider { getGitHeadRefsSuffix(rootProject, "release") }.get()
+            versionNameSuffix = ".${gitSuffix}"
+
+            if (!keystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.findByName("release")
+            }
+        }
+    }
+
     packaging {
-        resources {
-            excludes += setOf(
+        resources.excludes.addAll(
+            arrayOf(
                 "META-INF/**",
                 "kotlin/**",
                 "google/**",
@@ -56,126 +108,61 @@ android {
                 "DebugProbesKt.bin",
                 "kotlin-tooling-metadata.json"
             )
-        }
+        )
     }
 
-    // Disable lint errors for this build
     lint {
         abortOnError = false
     }
 
-    android.applicationVariants.all {
-        outputs.map { it as BaseVariantOutputImpl }
-            .forEach {
-                it.outputFileName = "TXHook-v${versionName}.apk"
-            }
-    }
-
-    flavorDimensions.add("mode")
-
-    productFlavors {
-        create("app") {
-            dimension = "mode"
-        }
-    }
-
-    configureAppSigningConfigsForRelease()
-}
-
-fun configureAppSigningConfigsForRelease() {
-    val keystorePath: String? = System.getenv("KEYSTORE_PATH")
-    project.configure<ApplicationExtension> {
-        if (!keystorePath.isNullOrBlank()) {
-            signingConfigs {
-                create("release") {
-                    storeFile = file(keystorePath)
-                    storePassword = System.getenv("KEYSTORE_PASSWORD")
-                    keyAlias = System.getenv("KEY_ALIAS")
-                    keyPassword = System.getenv("KEY_PASSWORD")
-                    enableV2Signing = true
+    applicationVariants.all {
+        outputs.all {
+            val output = this as BaseVariantOutputImpl
+            output.outputFileName?.let { fileName ->
+                if (fileName.endsWith(".apk")) {
+                    val projectName = rootProject.name
+                    val currentVersionName = versionName
+                    output.outputFileName = "${projectName}-v${currentVersionName}.APK"
                 }
-            }
-        }
-        buildTypes {
-            var signatureDigest: String? = getSignatureKeyDigest(signingConfigs.findByName("release"))
-            if (signatureDigest != null) {
-                println("Signature Digest: $signatureDigest")
-            } else {
-                println("No Signature Digest Configured")
-            }
-            release {
-                isMinifyEnabled = true
-                isShrinkResources = true
-                if (!keystorePath.isNullOrBlank()) {
-                    signingConfig = signingConfigs.findByName("release")
-                }
-                proguardFiles("proguard-rules.pro")
             }
         }
     }
 }
 
-fun getLocalProperty(propertyName: String): String? {
+fun getGitHeadRefsSuffix(project: Project, buildType: String): String {
     val rootProject = project.rootProject
-    val localProp = File(rootProject.projectDir, "local.properties")
-    if (!localProp.exists()) {
-        return null
-    }
-    val localProperties = Properties()
-    localProp.inputStream().use {
-        localProperties.load(it)
-    }
-    return localProperties.getProperty(propertyName, null)
-}
-
-fun getGitCommitCount(): Int {
-    val out = ByteArrayOutputStream()
-    exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-        standardOutput = out
-    }
-    return out.toString().trim().toInt()
-}
-
-fun getGitCommitHash(): String {
-    val out = ByteArrayOutputStream()
-    exec {
-        commandLine("git", "rev-parse", "--short", "HEAD")
-        standardOutput = out
-    }
-    return out.toString().trim()
-}
-
-fun getVersionName(): String {
-    return getGitCommitHash()
-}
-
-fun getSignatureKeyDigest(signConfig: ApkSigningConfig?): String? {
-    val key1: String? = if (signConfig?.storeFile != null) {
-        // extract certificate digest
-        val key = signConfig.storeFile
-        val keyStore = KeyStore.getInstance(signConfig.storeType ?: KeyStore.getDefaultType())
-        FileInputStream(key!!).use {
-            keyStore.load(it, signConfig.storePassword!!.toCharArray())
+    val projectDir = rootProject.projectDir
+    val headFile = File(projectDir, ".git" + File.separator + "HEAD")
+    return if (headFile.exists()) {
+        try {
+            val commitCount = gitCommitCount.get()
+            val hash = gitShortHash.get()
+            val prefix = if (buildType == "debug") "d" else "r"
+            "$prefix$commitCount.$hash"
+        } catch (e: Exception) {
+            println("Failed to get git info: ${e.message}")
+            ".standalone"
         }
-        val cert = keyStore.getCertificate(signConfig.keyAlias!!)
-        val md = MessageDigest.getInstance("MD5")
-        val digest = md.digest(cert.encoded)
-        digest.joinToString("") { "%02X".format(it) }
-    } else null
-    val key2: String? = getLocalProperty("ffekit.signature.md5digest")
-        ?.uppercase(Locale.ROOT)?.ifEmpty { null }
-    // check if key1 and key2 are the same
-    if (key1 != null && key2 != null && key1 != key2) {
-        error(
-            "The signature key digest in the signing config and local.properties are different, " +
-                    "got $key1 and $key2, please make sure they are the same."
-        )
+    } else {
+        println("Git HEAD file not found")
+        ".standalone"
     }
-    return (key1 ?: key2)?.also {
-        check(it.matches(Regex("[0-9A-F]{32}"))) {
-            "Invalid signature key digest: $it"
+}
+
+fun getBuildVersionCode(project: Project): Int {
+    val rootProject = project.rootProject
+    val projectDir = rootProject.projectDir
+    val headFile = File(projectDir, ".git" + File.separator + "HEAD")
+    return if (headFile.exists()) {
+        try {
+            gitCommitCount.get()
+        } catch (e: Exception) {
+            println("Failed to get git commit count: ${e.message}")
+            1
         }
+    } else {
+        println("Git HEAD file not found")
+        1
     }
 }
 
