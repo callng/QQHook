@@ -43,7 +43,7 @@ jobs:
           echo ${{ secrets.SIGN_KEYSTORE_BASE64 }} | base64 -d > keystore.jks
           chmod +x ./gradlew
           ./gradlew :app:assembleRelease --build-cache --parallel --daemon
-          echo "APK_FILE=$(find app/build/outputs/apk/app/release -name '*.APK')" >> $GITHUB_ENV
+          echo "APK_FILE=$(find app/build/outputs/apk/release -iname '*.apk' | head -n1)" >> $GITHUB_ENV
         env:
           KEYSTORE_PATH: "../keystore.jks"
           KEYSTORE_PASSWORD: ${{ secrets.SIGN_KEYSTORE_PASSWORD }}
