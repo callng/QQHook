@@ -45,7 +45,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = providers.provider { getBuildVersionCode(rootProject) }.get()
-        versionName = "3.2.3"
+        versionName = "3.3.0"
     }
 
     compileOptions {
