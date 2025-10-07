@@ -22,7 +22,7 @@ import moe.ore.xposed.utils.GlobalData
 import moe.ore.xposed.utils.HookUtil
 import moe.ore.xposed.utils.HttpUtil
 import moe.ore.xposed.utils.PacketDedupCache
-import moe.ore.xposed.utils.QQ_9_1_90_26520
+import moe.ore.xposed.utils.QQ_9_2_10_29175
 import moe.ore.xposed.utils.XPClassloader
 import moe.ore.xposed.utils.getPatchBuffer
 import moe.ore.xposed.utils.hookMethod
@@ -57,7 +57,7 @@ object MainHook {
     private val tlv_t = XPClassloader.load("oicq.wlogin_sdk.tlv_type.tlv_t")!!
     private val MD5 = XPClassloader.load("oicq.wlogin_sdk.tools.MD5")!!
     private val HighwaySessionData = XPClassloader.load("com.tencent.mobileqq.highway.openup.SessionInfo")!!
-    // private val MSFKernel = XPClassloader.load("com.tencent.mobileqq.msfcore.MSFKernel")
+    private val MSFKernel = XPClassloader.load("com.tencent.mobileqq.msfcore.MSFKernel")
 
     lateinit var unhook: XC_MethodHook.Unhook
     val hasUnhook get() = ::unhook.isInitialized
@@ -67,6 +67,7 @@ object MainHook {
         HttpUtil.contextWeakReference = WeakReference(ctx)
         this.source = source
 
+        hookMSFKernelPacket()
         hookCodecWarpperInit()
         hookMD5()
         hookTlv()
@@ -74,9 +75,7 @@ object MainHook {
         hookSendPacket()
         hookBDH()
         hookParams()
-        if (QQTypeEnum.valueOfPackage(hostPackageName) == QQTypeEnum.QQ && hostVersionCode >= QQ_9_1_90_26520) {
-            hookReceData(true)
-        } else hookReceData(false)
+        hookReceData(AntiDetection.isSupportedQQVersion(hostPackageName, hostVersionCode))
     }
 
     private fun hookCodecWarpperInit() {
@@ -94,8 +93,11 @@ object MainHook {
     }
 
     private fun hookMSFKernelPacket() {
-        hookMSFKernelSend()
-        hookMSFKernelReceive()
+        if (QQTypeEnum.valueOfPackage(hostPackageName) == QQTypeEnum.QQ &&
+            hostVersionCode > QQ_9_2_10_29175) {
+            hookMSFKernelSend()
+            hookMSFKernelReceive()
+        }
     }
 
     private fun hookMSFKernelReceive() {
@@ -137,7 +139,7 @@ object MainHook {
     }
 
     private fun hookMSFKernelSend() {
-        /*MSFKernel?.hookMethod("sendPacket")?.after {
+        MSFKernel?.hookMethod("sendPacket")?.after {
             val from = it.args[0]
             if (from.javaClass.name == "com.tencent.mobileqq.msfcore.MSFRequestAdapter") {
                 val cmdField = from.javaClass.getDeclaredField("mCmd").also { it.isAccessible = true }
@@ -164,7 +166,7 @@ object MainHook {
                     HttpUtil.sendTo(defaultUri, value, source)
                 }
             }
-        }*/
+        }
     }
 
     private fun hookBDH() {
