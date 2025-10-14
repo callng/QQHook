@@ -1,6 +1,6 @@
 # **TXHook - QQ协议抓包分析工具**
  
-> **📌 项目状态**  
+> **📌项目状态**  
 > 由原作者 [fuqiuluo](https://github.com/fuqiuluo)  开发并开源，现由 [owo233](https://github.com/callng)  维护优化，修复BUG并增强功能。
  
 ---
