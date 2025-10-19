@@ -12,7 +12,7 @@ internal object AntiDetection {
 
     operator fun invoke() {
         disableSwitch()
-        isLoginByNTHook()
+        // isLoginByNTHook()
     }
 
     private fun disableSwitch() {
@@ -24,12 +24,12 @@ internal object AntiDetection {
                     "msf_init_optimize", "msf_network_service_switch_new" -> {
                         if (isSupportedDisablingNewService()) param.result = false
                     }
-                    "wt_login_upgrade" -> {
+                    /*"wt_login_upgrade" -> {
                         param.result = false
                     }
                     "nt_login_downgrade" -> { // 强制降级到WT流程
                         param.result = true
-                    }
+                    }*/
                 }
             }
         }
