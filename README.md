@@ -55,7 +55,7 @@
   - QQ手表版
 
 
-TXHook Server下载地址：[点我](https://github.com/callng/QQHook/releases/download/v3.1.0/)
+TXHook Server下载地址：[点我](https://github.com/callng/QQHook/releases/tag/v3.1.0)
 
 ---
  
