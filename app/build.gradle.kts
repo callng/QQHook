@@ -1,61 +1,54 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.io.ByteArrayOutputStream
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
-abstract class GitCommitCount : ValueSource<Int, ValueSourceParameters.None> {
-    @get:Inject abstract val execOperations: ExecOperations
+val androidMinSdkVersion: Int by rootProject.extra
+val androidTargetSdkVersion: Int by rootProject.extra
+val androidCompileSdkVersion: Int by rootProject.extra
+val androidBuildToolsVersion: String by rootProject.extra
+val androidSourceCompatibility: JavaVersion by rootProject.extra
+val androidTargetCompatibility: JavaVersion by rootProject.extra
+val appVersionName: String by rootProject.extra
+val appVersionCode: Int by rootProject.extra
+val kotlinJvmTarget: JvmTarget by rootProject.extra
+val keystorePath: String? = System.getenv("KEYSTORE_PATH")
 
-    override fun obtain(): Int {
-        val output = ByteArrayOutputStream()
-        execOperations.exec {
-            commandLine("git", "rev-list", "--count", "HEAD")
-            standardOutput = output
-        }
-        return output.toString().trim().toInt()
-    }
-}
-
-abstract class GitShortHash : ValueSource<String, ValueSourceParameters.None> {
-    @get:Inject abstract val execOperations: ExecOperations
-
-    override fun obtain(): String {
-        val output = ByteArrayOutputStream()
-        execOperations.exec {
-            commandLine("git", "rev-parse", "--short=7", "HEAD")
-            standardOutput = output
-        }
-        return output.toString().trim()
-    }
-}
-
-val gitCommitCount = providers.of(GitCommitCount::class.java) {}
-val gitShortHash = providers.of(GitShortHash::class.java) {}
-
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "moe.ore.txhook"
-    compileSdk = 36
+    compileSdk = androidCompileSdkVersion
+    buildToolsVersion = androidBuildToolsVersion
 
     defaultConfig {
-        applicationId = "moe.ore.txhook"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = providers.provider { getBuildVersionCode(rootProject) }.get()
-        versionName = "3.3.0"
+        minSdk = androidMinSdkVersion
+        targetSdk = androidTargetSdkVersion
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+    signingConfigs {
+        create("release") {
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+                enableV2Signing = true
+            }
+        }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+        getByName("debug") {
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+                enableV2Signing = true
+            }
         }
     }
 
@@ -66,33 +59,13 @@ android {
 
     buildTypes {
         debug {
-            val gitSuffix = providers.provider { getGitHeadRefsSuffix(rootProject, "debug") }.get()
-            versionNameSuffix = ".${gitSuffix}"
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
-            val keystorePath: String? = System.getenv("KEYSTORE_PATH")
-            if (!keystorePath.isNullOrBlank()) {
-                signingConfigs {
-                    create("release") {
-                        storeFile = file(keystorePath)
-                        storePassword = System.getenv("KEYSTORE_PASSWORD")
-                        keyAlias = System.getenv("KEY_ALIAS")
-                        keyPassword = System.getenv("KEY_PASSWORD")
-                        enableV2Signing = true
-                    }
-                }
-            }
-
             isMinifyEnabled = true
             isShrinkResources = true
-            isCrunchPngs = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            val gitSuffix = providers.provider { getGitHeadRefsSuffix(rootProject, "release") }.get()
-            versionNameSuffix = ".${gitSuffix}"
-
-            if (!keystorePath.isNullOrBlank()) {
-                signingConfig = signingConfigs.findByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -115,54 +88,33 @@ android {
         abortOnError = false
     }
 
-    applicationVariants.all {
-        outputs.all {
-            val output = this as BaseVariantOutputImpl
-            output.outputFileName?.let { fileName ->
-                if (fileName.endsWith(".apk")) {
-                    val projectName = rootProject.name
-                    val currentVersionName = versionName
-                    output.outputFileName = "${projectName}-v${currentVersionName}.APK"
-                }
+    compileOptions {
+        sourceCompatibility = androidSourceCompatibility
+        targetCompatibility = androidTargetCompatibility
+    }
+}
+
+extensions.configure(KotlinAndroidProjectExtension::class.java) {
+    compilerOptions {
+        jvmTarget.set(kotlinJvmTarget)
+        freeCompilerArgs.addAll(
+            listOf(
+                "-Xno-call-assertions",
+                "-Xno-param-assertions",
+                "-Xno-receiver-assertions"
+            )
+        )
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            if (output is VariantOutputImpl) {
+                val newApkName = "${rootProject.name}-${appVersionName}-${variant.buildType}.apk"
+                output.outputFileName = newApkName
             }
         }
-    }
-}
-
-fun getGitHeadRefsSuffix(project: Project, buildType: String): String {
-    val rootProject = project.rootProject
-    val projectDir = rootProject.projectDir
-    val headFile = File(projectDir, ".git" + File.separator + "HEAD")
-    return if (headFile.exists()) {
-        try {
-            val commitCount = gitCommitCount.get()
-            val hash = gitShortHash.get()
-            val prefix = if (buildType == "debug") "d" else "r"
-            "$prefix$commitCount.$hash"
-        } catch (e: Exception) {
-            println("Failed to get git info: ${e.message}")
-            ".standalone"
-        }
-    } else {
-        println("Git HEAD file not found")
-        ".standalone"
-    }
-}
-
-fun getBuildVersionCode(project: Project): Int {
-    val rootProject = project.rootProject
-    val projectDir = rootProject.projectDir
-    val headFile = File(projectDir, ".git" + File.separator + "HEAD")
-    return if (headFile.exists()) {
-        try {
-            gitCommitCount.get()
-        } catch (e: Exception) {
-            println("Failed to get git commit count: ${e.message}")
-            1
-        }
-    } else {
-        println("Git HEAD file not found")
-        1
     }
 }
 

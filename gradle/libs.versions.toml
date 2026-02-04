@@ -3,9 +3,8 @@ agp = "9.0.0"
 appcompat = "1.7.1"
 constraintlayout = "2.2.1"
 core-ktx = "1.17.0"
-ezxhelper = "3.0.1"
+ezxhelper = "3.1.1-rc1"
 gson = "2.13.2"
-kotlin = "2.3.0"
 kotlinx-json = "1.10.0"
 kotlinx-io-jvm = "0.1.16"
 kotlinx-protobuf = "1.10.0"
@@ -36,4 +35,3 @@ xposed-api = { module = "de.robv.android.xposed:api", version.ref = "xposed-api"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
