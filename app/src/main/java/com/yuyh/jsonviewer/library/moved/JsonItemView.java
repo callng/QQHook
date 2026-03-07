@@ -3,7 +3,7 @@ package com.yuyh.jsonviewer.library.moved;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageView;
 
 import moe.ore.txhook.R;
 
@@ -44,11 +45,47 @@ public class JsonItemView extends LinearLayout {
 
     private void initView() {
         setOrientation(VERTICAL);
-        LayoutInflater.from(mContext).inflate(R.layout.jsonviewer_layout_item_view, this, true);
 
-        mTvLeft = findViewById(R.id.tv_left);
-        mTvRight = findViewById(R.id.tv_right);
-        mIvIcon = findViewById(R.id.iv_icon);
+        int p2 = dp(2);
+
+        LinearLayout row = new LinearLayout(mContext);
+        row.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        row.setOrientation(HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(24));
+        row.setPadding(p2, p2, p2, p2);
+
+        mTvLeft = new TextView(mContext);
+        mTvLeft.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        mTvLeft.setTextColor(0xFF475569);
+        mTvLeft.setTextSize(13);
+        mTvLeft.setVisibility(GONE);
+
+        mIvIcon = new AppCompatImageView(mContext);
+        LayoutParams iconLp = new LayoutParams(dp(12), dp(12));
+        iconLp.setMargins(dp(2), 0, dp(2), 0);
+        mIvIcon.setLayoutParams(iconLp);
+        mIvIcon.setAdjustViewBounds(true);
+        mIvIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        mIvIcon.setImageResource(R.drawable.jsonviewer_plus);
+        mIvIcon.setColorFilter(0xFF94A3B8);
+        mIvIcon.setContentDescription(getResources().getString(R.string.jsonViewer_icon_plus));
+        mIvIcon.setVisibility(GONE);
+
+        mTvRight = new TextView(mContext);
+        LayoutParams rightLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        rightLp.leftMargin = dp(2);
+        mTvRight.setLayoutParams(rightLp);
+        mTvRight.setTextColor(0xFF0F172A);
+        mTvRight.setTextSize(13);
+        mTvRight.setGravity(Gravity.CENTER_VERTICAL);
+        mTvRight.setVisibility(GONE);
+
+        row.addView(mTvLeft);
+        row.addView(mIvIcon);
+        row.addView(mTvRight);
+
+        addView(row);
     }
 
     public void setTextSize(float textSizeDp) {
@@ -128,5 +165,13 @@ public class JsonItemView extends LinearLayout {
             }
         }
         addViewInLayout(child, -1, params);
+    }
+
+    private int dp(int value) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                value,
+                getResources().getDisplayMetrics()
+        );
     }
 }

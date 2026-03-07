@@ -17,9 +17,4 @@
     <attr name="dialog_negative_color" format="color"/>
     <attr name="dialog_neutral_color" format="color"/>
     <attr name="dialog_positive_color" format="color"/>
-
-    <declare-styleable name="SettingView">
-        <attr name="leftText" format="string"/>
-        <attr name="rightStyle" format="string"/>
-    </declare-styleable>
 </resources>

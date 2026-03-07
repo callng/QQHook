@@ -17,7 +17,7 @@ import moe.ore.android.AndroKtx
 import moe.ore.script.Consist.GET_TEST_DATA
 import moe.ore.script.Consist.GET_TXHOOK_STATE
 import moe.ore.script.Consist.GET_TXHOOK_WS_STATE
-import moe.ore.txhook.app.fragment.MainFragment
+import moe.ore.txhook.app.model.CapturePacket
 import moe.ore.txhook.helper.EMPTY_BYTE_ARRAY
 import moe.ore.xposed.utils.PrefsManager
 import moe.ore.xposed.utils.PrefsManager.KEY_PUSH_API
@@ -77,7 +77,7 @@ class CatchProvider: ContentProvider() {
                     value.get("data") as ByteArray? ?: EMPTY_BYTE_ARRAY,
                     value.getAsInteger("source"),
                 )
-                "receive" -> handler.handlePacket(System.currentTimeMillis(), MainFragment.Packet(
+                "receive" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
                     true,
                     cmd = value.getAsString("cmd"),
                     buffer = value.get("buffer") as ByteArray,
@@ -89,7 +89,7 @@ class CatchProvider: ContentProvider() {
                     source = value.getAsInteger("source")
 
                 ))
-                "send" -> handler.handlePacket(System.currentTimeMillis(), MainFragment.Packet(
+                "send" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
                     false,
                     cmd = value.getAsString("cmd"),
                     buffer = value.get("buffer") as ByteArray,
@@ -138,7 +138,7 @@ class CatchProvider: ContentProvider() {
 
             abstract fun handleTlvGet(tlv: Int, buf: ByteArray, source: Int)
 
-            abstract fun handlePacket(time: Long, packet: MainFragment.Packet)
+            abstract fun handlePacket(time: Long, packet: CapturePacket)
 
             abstract fun handleTea(isEnc: Boolean, data: ByteArray, key: ByteArray, result: ByteArray, source: Int)
         }
@@ -318,3 +318,4 @@ class FakeCursor: Cursor, HashMap<String, Any>() {
         return extras
     }
 }
+

@@ -2,47 +2,96 @@ package moe.ore.android.dialog
 
 import android.content.Context
 import android.content.DialogInterface
-import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.annotation.Nullable
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ListView
+import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import moe.ore.txhook.R
-import moe.ore.txhook.databinding.DialogInputBinding
-import moe.ore.txhook.databinding.DialogListBinding
-import moe.ore.txhook.databinding.DialogTipsBinding
+import moe.ore.txhook.app.ui.dp
 
 object Dialog {
-    class EditTextAlertBuilder @JvmOverloads constructor(ctx: Context, @StyleRes themeId: Int = R.style.AppTheme_Dialog) :
-        AlertDialog.Builder(ctx, themeId) {
+    class EditTextAlertBuilder @JvmOverloads constructor(
+        ctx: Context,
+        @StyleRes themeId: Int = R.style.AppTheme_Dialog
+    ) : AlertDialog.Builder(ctx, themeId) {
 
-        private var mLayout: DialogInputBinding = DialogInputBinding.inflate(context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
+        private val rootView: View
+        private val titleView: TextView
+        private val editTextLayout: TextInputLayout
+        private val editText: TextInputEditText
+        private val buttonPanel: LinearLayout
+        private val positiveButton: Button
+        private val negativeButton: Button
 
         private var negativeListener: DialogInterface.OnClickListener? = null
-
+        private var defaultPositiveListener: DialogInterface.OnClickListener? = null
         private var dialog: AlertDialog? = null
-
         private var positiveListener: EditTextAlertListener? = null
 
         init {
-            super.setView(mLayout.root)
-            mLayout.negative.setOnClickListener {
+            val context = this.context
+            val card = createBaseCard(context)
+            rootView = card.root
+            titleView = card.title
+            buttonPanel = card.buttonPanel
+            positiveButton = card.positive
+            negativeButton = card.negative
+
+            editTextLayout = TextInputLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                hint = "text"
+                boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
+                boxStrokeWidth = context.dp(1)
+                boxStrokeWidthFocused = context.dp(1)
+            }
+
+            editText = TextInputEditText(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            editTextLayout.addView(editText)
+            card.content.addView(editTextLayout)
+
+            super.setView(rootView)
+
+            negativeButton.setOnClickListener {
                 negativeListener?.onClick(dialog, DialogInterface.BUTTON_NEGATIVE)
+                dialog?.dismiss()
+            }
+
+            positiveButton.setOnClickListener {
+                positiveListener?.onSubmit(editText.text)
+                defaultPositiveListener?.onClick(dialog, DialogInterface.BUTTON_POSITIVE)
                 dialog?.dismiss()
             }
         }
 
         override fun setTitle(title: CharSequence?): EditTextAlertBuilder {
-            mLayout.title.text = title
-            mLayout.title.visibility = View.VISIBLE
+            titleView.text = title
+            titleView.visibility = View.VISIBLE
             return this
         }
 
         override fun setTitle(titleId: Int): AlertDialog.Builder {
-            mLayout.title.setText(titleId)
-            mLayout.title.visibility = View.VISIBLE
+            titleView.setText(titleId)
+            titleView.visibility = View.VISIBLE
             return this
         }
 
@@ -55,18 +104,16 @@ object Dialog {
         }
 
         fun setHint(text: CharSequence?): AlertDialog.Builder {
-            mLayout.editText.hint = text
+            editText.hint = text
             return this
         }
 
         fun setFloatingText(text: CharSequence?): EditTextAlertBuilder {
-            mLayout.editText.floatingLabelText = text
+            editTextLayout.hint = text
             return this
         }
 
-        fun setTextListener(
-            listener: EditTextAlertListener
-        ): EditTextAlertBuilder {
+        fun setTextListener(listener: EditTextAlertListener): EditTextAlertBuilder {
             positiveListener = listener
             return this
         }
@@ -75,20 +122,14 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener?
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.positive.visibility = View.VISIBLE
-            mLayout.positive.text = text
-            mLayout.positive.setOnClickListener {
-                positiveListener?.onSubmit(mLayout.editText.text)
-                dialog?.dismiss()
-            }
+            buttonPanel.visibility = View.VISIBLE
+            positiveButton.visibility = View.VISIBLE
+            positiveButton.text = text
+            defaultPositiveListener = listener
             return this
         }
 
-        override fun setPositiveButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setPositiveButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setPositiveButton(context.getString(textId), listener)
         }
 
@@ -96,17 +137,14 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.negative.visibility = View.VISIBLE
-            mLayout.negative.text = text
+            buttonPanel.visibility = View.VISIBLE
+            negativeButton.visibility = View.VISIBLE
+            negativeButton.text = text
             negativeListener = listener
             return this
         }
 
-        override fun setNegativeButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
@@ -116,7 +154,7 @@ object Dialog {
         }
 
         override fun show(): AlertDialog {
-            this.create()
+            create()
             dialog?.show()
             return dialog!!
         }
@@ -126,34 +164,55 @@ object Dialog {
         }
     }
 
-    class ListAlertBuilder @JvmOverloads constructor(ctx: Context, @StyleRes themeId: Int = R.style.AppTheme_Dialog) :
-        AlertDialog.Builder(ctx, themeId) {
+    class ListAlertBuilder @JvmOverloads constructor(
+        ctx: Context,
+        @StyleRes themeId: Int = R.style.AppTheme_Dialog
+    ) : AlertDialog.Builder(ctx, themeId) {
 
-        private var mLayout: DialogListBinding = DialogListBinding.inflate(context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
+        private val rootView: View
+        private val titleView: TextView
+        private val listView: ListView
+        private val buttonPanel: LinearLayout
+        private val negativeButton: Button
 
         private var negativeListener: DialogInterface.OnClickListener? = null
-
         private var dialog: AlertDialog? = null
-
         private val items: LinkedHashMap<String, ((AlertDialog, View, Int) -> Unit)?> = linkedMapOf()
 
         init {
-            super.setView(mLayout.root)
-            mLayout.negative.setOnClickListener {
+            val context = this.context
+            val card = createBaseCard(context)
+            rootView = card.root
+            titleView = card.title
+            buttonPanel = card.buttonPanel
+            negativeButton = card.negative
+
+            listView = ListView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    context.dp(280)
+                ).also { it.topMargin = context.dp(10) }
+                dividerHeight = context.dp(1)
+            }
+
+            card.content.addView(listView)
+            super.setView(rootView)
+
+            negativeButton.setOnClickListener {
                 negativeListener?.onClick(dialog, DialogInterface.BUTTON_NEGATIVE)
                 dialog?.dismiss()
             }
         }
 
         override fun setTitle(title: CharSequence?): ListAlertBuilder {
-            mLayout.title.text = title
-            mLayout.title.visibility = View.VISIBLE
+            titleView.text = title
+            titleView.visibility = View.VISIBLE
             return this
         }
 
         override fun setTitle(titleId: Int): AlertDialog.Builder {
-            mLayout.title.setText(titleId)
-            mLayout.title.visibility = View.VISIBLE
+            titleView.setText(titleId)
+            titleView.visibility = View.VISIBLE
             return this
         }
 
@@ -174,52 +233,56 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.negative.visibility = View.VISIBLE
-            mLayout.negative.text = text
+            buttonPanel.visibility = View.VISIBLE
+            negativeButton.visibility = View.VISIBLE
+            negativeButton.text = text
             negativeListener = listener
             return this
         }
 
-        override fun setNegativeButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
         override fun create(): AlertDialog {
             dialog = super.create()
 
-            val ks = arrayListOf<String>()
-            val vs = arrayListOf<((AlertDialog, View, Int) -> Unit)?>()
+            val names = items.keys.toList()
+            val callbacks = items.values.toList()
 
-            items.forEach { (t, u) ->
-                ks.add(t)
-                vs.add(u)
-            }
-
-            val list = mLayout.listView
-            list.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, ks)
-            list.setOnItemClickListener { _, view, position, _ ->
-                val f = vs[position]
-                if (f != null) f.invoke(dialog!!, view, position) else dialog?.dismiss()
+            listView.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, names)
+            listView.setOnItemClickListener { _, view, position, _ ->
+                val callback = callbacks[position]
+                if (callback != null) {
+                    callback.invoke(dialog!!, view, position)
+                } else {
+                    dialog?.dismiss()
+                }
             }
 
             return dialog as AlertDialog
         }
 
         override fun show(): AlertDialog {
-            this.create()
+            create()
             dialog?.show()
             return dialog!!
         }
     }
 
-    class CommonAlertBuilder @JvmOverloads constructor(ctx: Context, @StyleRes themeId: Int = R.style.AppTheme_Dialog) :
-        AlertDialog.Builder(ctx, themeId) {
+    class CommonAlertBuilder @JvmOverloads constructor(
+        ctx: Context,
+        @StyleRes themeId: Int = R.style.AppTheme_Dialog
+    ) : AlertDialog.Builder(ctx, themeId) {
 
-        private var mLayout: DialogTipsBinding = DialogTipsBinding.inflate(context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
+        private val rootView: View
+        private val titleView: TextView
+        private val messageView: TextView
+        private val messagePanel: LinearLayout
+        private val buttonPanel: LinearLayout
+        private val positiveButton: Button
+        private val negativeButton: Button
+        private val neutralButton: Button
 
         private var positiveListener: DialogInterface.OnClickListener? = null
         private var negativeListener: DialogInterface.OnClickListener? = null
@@ -228,24 +291,60 @@ object Dialog {
         private var dialog: AlertDialog? = null
 
         init {
-            super.setView(mLayout.root)
-            mLayout.title.visibility = View.GONE
-            mLayout.negative.visibility = View.GONE
-            mLayout.positive.visibility = View.GONE
-            mLayout.neutral.visibility = View.GONE
-            mLayout.buttonPanel.visibility = View.GONE
-            mLayout.messagePanel.visibility = View.GONE
+            val context = this.context
+            val card = createBaseCard(context)
+            rootView = card.root
+            titleView = card.title
+            buttonPanel = card.buttonPanel
+            positiveButton = card.positive
+            negativeButton = card.negative
+            neutralButton = card.neutral
+            messagePanel = card.content
+
+            messageView = TextView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                gravity = Gravity.CENTER
+                setPadding(context.dp(4), context.dp(4), context.dp(4), context.dp(4))
+                setTextColor(0xFF334155.toInt())
+                textSize = 14f
+                visibility = View.GONE
+            }
+            messagePanel.addView(messageView)
+
+            super.setView(rootView)
+
+            titleView.visibility = View.GONE
+            negativeButton.visibility = View.GONE
+            positiveButton.visibility = View.GONE
+            neutralButton.visibility = View.GONE
+            buttonPanel.visibility = View.GONE
+
+            positiveButton.setOnClickListener {
+                positiveListener?.onClick(dialog, DialogInterface.BUTTON_POSITIVE)
+                dialog?.dismiss()
+            }
+            negativeButton.setOnClickListener {
+                negativeListener?.onClick(dialog, DialogInterface.BUTTON_NEGATIVE)
+                dialog?.dismiss()
+            }
+            neutralButton.setOnClickListener {
+                neutralListener?.onClick(dialog, DialogInterface.BUTTON_NEUTRAL)
+                dialog?.dismiss()
+            }
         }
 
         override fun setTitle(title: CharSequence?): AlertDialog.Builder {
-            mLayout.title.text = title
-            mLayout.title.visibility = View.VISIBLE
+            titleView.text = title
+            titleView.visibility = View.VISIBLE
             return this
         }
 
         override fun setTitle(titleId: Int): AlertDialog.Builder {
-            mLayout.title.setText(titleId)
-            mLayout.title.visibility = View.VISIBLE
+            titleView.setText(titleId)
+            titleView.visibility = View.VISIBLE
             return this
         }
 
@@ -257,9 +356,9 @@ object Dialog {
             return this
         }
 
-        override fun setMessage(@Nullable message: CharSequence?): AlertDialog.Builder {
-            mLayout.message.text = message
-            mLayout.messagePanel.visibility = View.VISIBLE
+        override fun setMessage(message: CharSequence?): AlertDialog.Builder {
+            messageView.text = message
+            messageView.visibility = View.VISIBLE
             return this
         }
 
@@ -271,21 +370,14 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.positive.visibility = View.VISIBLE
-            mLayout.positive.text = text
+            buttonPanel.visibility = View.VISIBLE
+            positiveButton.visibility = View.VISIBLE
+            positiveButton.text = text
             positiveListener = listener
-            mLayout.positive.setOnClickListener {
-                positiveListener?.onClick(dialog, DialogInterface.BUTTON_POSITIVE)
-                dialog?.dismiss()
-            }
             return this
         }
 
-        override fun setPositiveButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setPositiveButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setPositiveButton(context.getString(textId), listener)
         }
 
@@ -293,21 +385,14 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.negative.visibility = View.VISIBLE
-            mLayout.negative.text = text
+            buttonPanel.visibility = View.VISIBLE
+            negativeButton.visibility = View.VISIBLE
+            negativeButton.text = text
             negativeListener = listener
-            mLayout.negative.setOnClickListener {
-                negativeListener?.onClick(dialog, DialogInterface.BUTTON_NEGATIVE)
-                dialog?.dismiss()
-            }
             return this
         }
 
-        override fun setNegativeButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
@@ -315,21 +400,14 @@ object Dialog {
             text: CharSequence?,
             listener: DialogInterface.OnClickListener
         ): AlertDialog.Builder {
-            mLayout.buttonPanel.visibility = View.VISIBLE
-            mLayout.neutral.visibility = View.VISIBLE
-            mLayout.neutral.text = text
+            buttonPanel.visibility = View.VISIBLE
+            neutralButton.visibility = View.VISIBLE
+            neutralButton.text = text
             neutralListener = listener
-            mLayout.neutral.setOnClickListener {
-                neutralListener?.onClick(dialog, DialogInterface.BUTTON_NEUTRAL)
-                dialog?.dismiss()
-            }
             return this
         }
 
-        override fun setNeutralButton(
-            @StringRes textId: Int,
-            listener: DialogInterface.OnClickListener
-        ): AlertDialog.Builder {
+        override fun setNeutralButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
             return setNeutralButton(context.getString(textId), listener)
         }
 
@@ -339,9 +417,109 @@ object Dialog {
         }
 
         override fun show(): AlertDialog {
-            this.create()
+            create()
             dialog?.show()
             return dialog!!
         }
     }
+
+    private fun createBaseCard(context: Context): DialogCard {
+        val root = FrameLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(context.dp(8), context.dp(8), context.dp(8), context.dp(8))
+        }
+
+        val card = MaterialCardView(context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+            radius = context.dp(14).toFloat()
+            cardElevation = context.dp(8).toFloat()
+            setCardBackgroundColor(0xFFFFFFFF.toInt())
+        }
+
+        val shell = LinearLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setPadding(context.dp(16), context.dp(12), context.dp(16), context.dp(10))
+        }
+
+        val content = LinearLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val title = TextView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER
+            setTextColor(0xFF111827.toInt())
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            visibility = View.GONE
+        }
+
+        val buttonPanel = LinearLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, context.dp(8), 0, 0)
+            visibility = View.GONE
+        }
+
+        val neutral = dialogButton(context, R.color.tx_appbar_color)
+        val positive = dialogButton(context, R.color.tx_appbar_color)
+        val negative = dialogButton(context, R.color.red500)
+
+        buttonPanel.addView(neutral)
+        buttonPanel.addView(positive)
+        buttonPanel.addView(negative)
+
+        content.addView(title)
+        shell.addView(content)
+        shell.addView(buttonPanel)
+        card.addView(shell)
+        root.addView(card)
+
+        return DialogCard(root, content, title, buttonPanel, positive, negative, neutral)
+    }
+
+    private fun dialogButton(context: Context, colorRes: Int): Button {
+        return Button(context, null, android.R.attr.buttonBarButtonStyle).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setTextColor(context.getColor(colorRes))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            visibility = View.GONE
+            setAllCaps(false)
+        }
+    }
+
+    private data class DialogCard(
+        val root: View,
+        val content: LinearLayout,
+        val title: TextView,
+        val buttonPanel: LinearLayout,
+        val positive: Button,
+        val negative: Button,
+        val neutral: Button,
+    )
 }
+

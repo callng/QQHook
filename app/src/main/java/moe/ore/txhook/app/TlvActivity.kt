@@ -1,103 +1,122 @@
 package moe.ore.txhook.app
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.core.content.res.ResourcesCompat
-import androidx.fragment.app.Fragment
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import kotlinx.serialization.ExperimentalSerializationApi
 import moe.ore.android.EasyActivity
-import moe.ore.android.util.StatusBarUtil
 import moe.ore.txhook.R
-import moe.ore.txhook.app.fragment.MainFragment
-import moe.ore.txhook.app.fragment.PacketHexFragment
-import moe.ore.txhook.databinding.ActivityPacketBinding
-import moe.ore.txhook.databinding.FragmentPacketInfoBinding
+import moe.ore.txhook.app.model.CaptureAction
+import moe.ore.txhook.app.ui.compose.HexViewerCard
+import moe.ore.txhook.app.ui.compose.InfoSections
+import moe.ore.txhook.app.ui.compose.sourceName
+import moe.ore.txhook.app.ui.theme.TxHookTheme
 
 @ExperimentalSerializationApi
-class TlvActivity: EasyActivity() {
-    private val mFragmentList: ArrayList<Fragment> = ArrayList()
-    private lateinit var binding: ActivityPacketBinding
-    private val titles = arrayOf("详细", "内容")
-
+class TlvActivity : EasyActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+        )
 
-        StatusBarUtil.setStatusBarColor(this, ResourcesCompat.getColor(resources, R.color.white, null))
-        StatusBarUtil.setAndroidNativeLightStatusBar(this, true)
+        val action = intent.getParcelableExtra<CaptureAction>("data")
+            ?: error("action must not be null")
 
-        binding = ActivityPacketBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        val packet = intent.getParcelableExtra<MainFragment.Action>("data")
-            ?: error("packet activity packet field is must not null 2")
-
-        mFragmentList.add(TlvGetFragment().apply { this.action = packet })
-        mFragmentList.add(PacketHexFragment().also { it.initBuffer(packet.buffer) })
-
-        val viewPager = binding.viewPager
-        val adapter: FragmentStateAdapter = object : FragmentStateAdapter(supportFragmentManager, lifecycle) {
-            override fun getItemCount(): Int = mFragmentList.size
-
-            override fun createFragment(position: Int): Fragment = mFragmentList[position]
+        setContent {
+            TxHookTheme {
+                TlvScreen(action = action, onBack = { finish() })
+            }
         }
-        viewPager.adapter = adapter
-        val tabLayout = binding.tabs
-
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text = titles[position]
-        }.attach()
-
-        binding.back.setOnClickListener { finish() }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
     }
 }
 
-@ExperimentalSerializationApi
-class TlvGetFragment: Fragment() {
-    lateinit var action: MainFragment.Action
-    private lateinit var binding: FragmentPacketInfoBinding
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TlvScreen(action: CaptureAction, onBack: () -> Unit) {
+    var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val tabs = listOf(
+        stringResource(R.string.tab_detail),
+        stringResource(R.string.tab_content),
+    )
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return FragmentPacketInfoBinding.inflate(inflater, container, false).also {
-            this.binding = it
-        }.root
-    }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.catching_info)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_baseline_arrow_back_ios_24),
+                            contentDescription = stringResource(R.string.back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TabRow(selectedTabIndex = tabIndex) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(selected = tabIndex == index, onClick = { tabIndex = index }, text = { Text(title) })
+                }
+            }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+            AnimatedContent(targetState = tabIndex, label = "tlv_tab") { selected ->
+                when (selected) {
+                    0 -> InfoSections(
+                        baseTitle = stringResource(R.string.title_base_info),
+                        baseItems = listOf(
+                            stringResource(R.string.field_type) to "0x${Integer.toHexString(action.what)}",
+                        ),
+                        extraTitle = stringResource(R.string.title_extra_info),
+                        extraItems = listOf(
+                            stringResource(R.string.field_source_app) to sourceName(action.source),
+                        ),
+                    )
 
-        this.action = if (this::action.isInitialized) action else savedInstanceState?.getParcelable("data")!!
-
-        val baseInfo = binding.baseInfo
-        baseInfo.tittle("基础信息")
-        baseInfo.item("TYPE", "0x" + Integer.toHexString(action.what))
-
-        val plusInfo = binding.plusInfo
-        plusInfo.tittle("附加信息")
-        plusInfo.item("会话来源", when(action.source){
-            MainFragment.Packet.MQQ -> "MobileQQ"
-            MainFragment.Packet.QIDIAN -> "QIDIAN"
-            MainFragment.Packet.QQLITE -> "QQLite"
-            MainFragment.Packet.TIM -> "TIM"
-            else -> "unknown"
-        })
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putParcelable("data", action)
+                    else -> HexViewerCard(action.buffer)
+                }
+            }
+        }
     }
 }
+
+
+

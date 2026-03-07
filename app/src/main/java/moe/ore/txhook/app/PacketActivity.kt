@@ -1,87 +1,130 @@
 package moe.ore.txhook.app
 
 import android.os.Bundle
-import androidx.core.content.res.ResourcesCompat
-import androidx.fragment.app.Fragment
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
-import kotlinx.serialization.ExperimentalSerializationApi
+import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import moe.ore.android.EasyActivity
-import moe.ore.android.util.StatusBarUtil
 import moe.ore.txhook.R
-import moe.ore.txhook.app.fragment.MainFragment
-import moe.ore.txhook.app.fragment.PacketHexFragment
-import moe.ore.txhook.app.fragment.PacketInfoFragment
-import moe.ore.txhook.app.fragment.ParserFragment
-import moe.ore.txhook.databinding.ActivityPacketBinding
+import moe.ore.txhook.app.model.CapturePacket
+import moe.ore.txhook.app.ui.compose.HexViewerCard
+import moe.ore.txhook.app.ui.compose.InfoSections
+import moe.ore.txhook.app.ui.compose.ParserToolCard
+import moe.ore.txhook.app.ui.compose.sourceName
+import moe.ore.txhook.app.ui.theme.TxHookTheme
 
-
-class PacketActivity: EasyActivity() {
-    companion object {
-        private val titles = arrayOf("详细", "分析", "HEX")
-    }
-
-    private val mFragmentList: ArrayList<Fragment> = ArrayList()
-    private lateinit var binding: ActivityPacketBinding
-
-    @OptIn(ExperimentalSerializationApi::class)
+class PacketActivity : EasyActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+        )
 
-        StatusBarUtil.setStatusBarColor(this, ResourcesCompat.getColor(resources, R.color.white, null))
-        StatusBarUtil.setAndroidNativeLightStatusBar(this, true)
+        val packet = intent.getParcelableExtra<CapturePacket>("data")
+            ?: error("packet must not be null")
 
-        binding = ActivityPacketBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        val packet = intent.getParcelableExtra<MainFragment.Packet>("data")
-            ?: error("packet activity packet field is must not null")
-
-        mFragmentList.add(PacketInfoFragment().apply { this.packet = packet })
-        mFragmentList.add(ParserFragment().also { it.packet = packet })
-        mFragmentList.add(PacketHexFragment().also { it.initBuffer(packet.buffer) })
-
-        val viewPager = binding.viewPager
-        val adapter: FragmentStateAdapter = object : FragmentStateAdapter(supportFragmentManager, lifecycle) {
-            override fun getItemCount(): Int = mFragmentList.size
-
-            override fun createFragment(position: Int): Fragment = mFragmentList[position]
+        setContent {
+            TxHookTheme {
+                PacketScreen(packet = packet, onBack = { finish() })
+            }
         }
-        viewPager.adapter = adapter
-        val tabLayout = binding.tabs
-
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text = titles[position]
-        }.attach()
-
-        binding.back.setOnClickListener { finish() }
-
-        binding.more.setOnClickListener {
-            /*
-            val mTopRightMenu = TopRightMenu(this)
-            val menuItems: MutableList<MenuItem> = ArrayList()
-            menuItems.add(MenuItem(R.drawable.icon_catch, "分享出去"))
-            menuItems.add(MenuItem(R.drawable.ic_baseline_save_24, "保存文件"))
-            // menuItems.add(MenuItem(R.drawable.met_ic_clear, "扫一扫"))
-
-            mTopRightMenu
-                .setHeight(800) //默认高度480
-                .setWidth(400) //默认宽度wrap_content
-                .showIcon(true) //显示菜单图标，默认为true
-                .dimBackground(true) //背景变暗，默认为true
-                .needAnimationStyle(true) //显示动画，默认为true
-                .setAnimationStyle(R.style.TRM_ANIM_STYLE)
-                .addMenuList(menuItems)
-                .setOnMenuItemClickListener { position ->
-                    Toast.toast(this, "点击菜单:$position")
-                }
-                .showAsDropDown(it, -50, 0) //带偏移量*/
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PacketScreen(packet: CapturePacket, onBack: () -> Unit) {
+    var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val tabs = listOf(
+        stringResource(R.string.tab_detail),
+        stringResource(R.string.tab_analyse),
+        stringResource(R.string.tab_hex),
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.catching_info)) },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        androidx.compose.material3.Icon(
+                            painter = androidx.compose.ui.res.painterResource(R.drawable.ic_baseline_arrow_back_ios_24),
+                            contentDescription = stringResource(R.string.back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TabRow(selectedTabIndex = tabIndex) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(selected = tabIndex == index, onClick = { tabIndex = index }, text = { Text(title) })
+                }
+            }
+
+            AnimatedContent(targetState = tabIndex, label = "packet_tab") { selected ->
+                when (selected) {
+                    0 -> InfoSections(
+                        baseTitle = stringResource(R.string.title_base_info),
+                        baseItems = listOf(
+                            stringResource(R.string.field_command) to packet.cmd,
+                            stringResource(R.string.field_uin) to packet.uin.toString(),
+                            stringResource(R.string.field_timestamp) to packet.time.toString(),
+                            stringResource(R.string.field_sequence) to packet.seq.toString(),
+                            stringResource(R.string.field_packet_size) to packet.buffer.size.toString(),
+                        ),
+                        extraTitle = stringResource(R.string.title_extra_info),
+                        extraItems = listOf(
+                            stringResource(R.string.field_cookie) to packet.msgCookie.toHexString(),
+                            stringResource(R.string.field_type) to packet.type,
+                            stringResource(R.string.field_source_app) to sourceName(packet.source),
+                        ),
+                    )
+
+                    1 -> ParserToolCard(packet = packet)
+                    else -> HexViewerCard(buffer = packet.buffer)
+                }
+            }
+        }
+    }
+}
+
+private fun ByteArray.toHexString(): String {
+    return joinToString(separator = " ") { b -> "%02X".format(b) }
+}
+
+
+

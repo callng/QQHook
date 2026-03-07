@@ -4,7 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 plugins {
-    alias(libs.plugins.android.application)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
 }
 
 val androidMinSdkVersion: Int by rootProject.extra
@@ -53,7 +54,8 @@ extensions.configure<ApplicationExtension> {
     }
 
     buildFeatures {
-        viewBinding = true
+        viewBinding = false
+        compose = true
         buildConfig = true
     }
 
@@ -119,20 +121,32 @@ androidComponents {
 }
 
 dependencies {
-    compileOnly(libs.xposed.api)
-    implementation(libs.android.material)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.ezxhelper.android.utils)
-    implementation(libs.ezxhelper.core)
-    implementation(libs.ezxhelper.xposed.api)
-    implementation(libs.google.gson)
-    implementation(libs.google.protobuf)
-    implementation(libs.kotlinx.io.jvm)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.serialization.protobuf)
-    implementation(libs.materialedittext.library)
-    implementation(libs.okhttp3.okhttp)
+    compileOnly("de.robv.android.xposed:api:82")
+
+    implementation(platform("androidx.compose:compose-bom:2025.10.01"))
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("io.github.kyuubiran.ezxhelper:android-utils:3.1.1-rc1")
+    implementation("io.github.kyuubiran.ezxhelper:core:3.1.1-rc1")
+    implementation("io.github.kyuubiran.ezxhelper:xposed-api-82:3.1.1-rc1")
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.google.protobuf:protobuf-java:4.34.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.10.0")
+    implementation("com.rengwuxian.materialedittext:library:2.1.4")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
 }

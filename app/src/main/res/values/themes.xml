@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
@@ -17,13 +17,12 @@
         <item name="windowNoTitle">true</item>
 
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
 
         <item name="imageColorTint">@android:color/secondary_text_light</item>
-
-        <item name="android:windowTranslucentStatus" tools:targetApi="19">true</item>
     </style>
 
-    <style name="AppTheme.Dialog" parent="ThemeOverlay.AppCompat.Dialog">
+    <style name="AppTheme.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
         <item name="android:windowFrame">@null</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
@@ -58,10 +57,8 @@
         <item name="cardBackgroundColor">@android:color/background_light</item>
     </style>
 
-    <style name="AppTheme.SplashTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme.SplashTheme" parent="AppTheme">
         <item name="android:windowBackground">@drawable/ic_entry_background</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 
 </resources>

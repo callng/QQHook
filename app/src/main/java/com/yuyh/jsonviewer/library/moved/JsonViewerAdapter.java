@@ -21,7 +21,7 @@ import java.util.Objects;
 import moe.ore.android.dialog.Dialog;
 import moe.ore.android.util.AndroidUtil;
 import moe.ore.txhook.app.ParserActivity;
-import moe.ore.txhook.app.fragment.MainFragment;
+import moe.ore.txhook.app.model.CapturePacket;
 import moe.ore.txhook.helper.HexUtil;
 
 /**
@@ -89,10 +89,10 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                 return;
             }
 
-            String key = Objects.requireNonNull(mJSONObject.names()).optString(position - 1); // 遍历key
+            String key = Objects.requireNonNull(mJSONObject.names()).optString(position - 1); // iterate keys
             Object value = mJSONObject.opt(key);
 
-            // 最后一组，结尾不需要逗号
+            // no trailing comma for last item
             handleJsonObject(key, value, itemView, position < getItemCount() - 2, 1);
         }
 
@@ -109,8 +109,8 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                 return;
             }
 
-            Object value = mJSONArray.opt(position - 1); // 遍历array
-            // 最后一组，结尾不需要逗号
+            Object value = mJSONArray.opt(position - 1); // iterate array
+            // no trailing comma for last item
             handleJsonArray(value, itemView, position < getItemCount() - 2, 1);
         }
     }
@@ -131,7 +131,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
     }
 
     /**
-     * 处理 value 上级为 JsonObject 的情况，value有key
+     * Handle value when parent is JsonObject (value has key).
      *
      * @param value
      * @param key
@@ -156,12 +156,12 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
     }
 
     /**
-     * 处理 value 上级为 JsonArray 的情况，value无key
+     * Handle value when parent is JsonArray (value has no key).
      *
      * @param value
      * @param itemView
-     * @param appendComma 结尾是否需要逗号(最后一组 value 不需要逗号)
-     * @param hierarchy   缩进层级
+     * @param appendComma whether to append a trailing comma (last value has no comma)
+     * @param hierarchy   indentation level
      */
     private void handleJsonArray(Object value, JsonItemView itemView, boolean appendComma, int hierarchy) {
         itemView.showLeft(new SpannableStringBuilder(Utils.getHierarchyStr(hierarchy)));
@@ -172,8 +172,8 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
     /**
      * @param value
      * @param itemView
-     * @param appendComma 结尾是否需要逗号(最后一组 key:value 不需要逗号)
-     * @param hierarchy   缩进层级
+     * @param appendComma whether to append a trailing comma (last key:value has no comma)
+     * @param hierarchy   indentation level
      */
     private void handleValue(Object value, JsonItemView itemView, boolean appendComma, int hierarchy) {
         SpannableStringBuilder valueBuilder = new SpannableStringBuilder();
@@ -259,7 +259,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
         @Override
         public void onClick(View view) {
             if (isJsonObject || isJsonArray ){
-                if (itemView.getChildCount() == 1) { // 初始（折叠） --> 展开""
+                if (itemView.getChildCount() == 1) { // collapsed -> expand
                     isCollapsed = false;
                     itemView.showIcon(false);
                     itemView.setTag(itemView.getRightText());
@@ -287,7 +287,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                     itemView.addViewNoInvalidate(childItemView);
                     itemView.requestLayout();
                     itemView.invalidate();
-                } else {                            // 折叠 <--> 展开
+                } else {                            // toggle collapse/expand
                     CharSequence temp = itemView.getRightText();
                     itemView.showRight((CharSequence) itemView.getTag());
                     itemView.setTag(temp);
@@ -313,34 +313,34 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                     }
 
                     builder.setTitle(subV);
-                    builder.addItem("复制到剪切板", (dialog, view1, integer) -> {
+                    builder.addItem("\u590d\u5236\u5230\u526a\u5207\u677f", (dialog, view1, integer) -> {
                         dialog.dismiss();
                         if (originalHex && isNoHex) {
                             AndroidUtil.copyText(context, new String(HexUtil.Hex2Bin(v)));
                         } else AndroidUtil.copyText(context, v);
                         return null;
                     });
-                    // <<============================ 快速分析
+                    // <<============================ quick parser actions
                     if (isHex) {
-                        builder.addItem("Jce数据解析", (dialog, view1, integer) -> {
+                        builder.addItem("JCE\u6570\u636e\u89e3\u6790", (dialog, view1, integer) -> {
                             dialog.dismiss();
                             Intent intent = new Intent(context, ParserActivity.class);
-                            intent.putExtra("data", MainFragment.Packet.CREATOR.create(HexUtil.Hex2Bin(v)));
+                            intent.putExtra("data", CapturePacket.CREATOR.create(HexUtil.Hex2Bin(v)));
                             intent.putExtra("jce", true);
                             context.startActivity(intent);
                             return null;
                         });
-                        builder.addItem("Protobuf解析", (dialog, view1, integer) -> {
+                        builder.addItem("Protobuf\u89e3\u6790", (dialog, view1, integer) -> {
                             dialog.dismiss();
                             Intent intent = new Intent(context, ParserActivity.class);
-                            intent.putExtra("data", MainFragment.Packet.CREATOR.create(HexUtil.Hex2Bin(v)));
+                            intent.putExtra("data", CapturePacket.CREATOR.create(HexUtil.Hex2Bin(v)));
                             intent.putExtra("jce", false);
                             context.startActivity(intent);
                             return null;
                         });
                     }
                     if (isHex || isNoHex) {
-                        builder.addItem(isHex ? "转为字符串" : "转为Hex", (dialog, view1, integer) -> {
+                        builder.addItem(isHex ? "\u8f6c\u4e3a\u5b57\u7b26\u4e32" : "\u8f6c\u4e3aHex", (dialog, view1, integer) -> {
                             dialog.dismiss();
                             if (isNoHex) {
                                 value = "[hex]" + v;
@@ -370,7 +370,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                             return null;
                         });
                     } else if (isHexNum) {
-                        builder.addItem("转为10进制", (dialog, view1, whitch) -> {
+                        builder.addItem("\u8f6c\u4e3a10\u8fdb\u5236", (dialog, view1, whitch) -> {
                             dialog.dismiss();
                             value = Long.parseLong(v);
                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
@@ -389,13 +389,13 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                 } else {
                     String v = value.toString();
                     builder.setTitle(v);
-                    builder.addItem("复制到剪切板", (dialog, view1, integer) -> {
+                    builder.addItem("\u590d\u5236\u5230\u526a\u5207\u677f", (dialog, view1, integer) -> {
                         dialog.dismiss();
                         AndroidUtil.copyText(context, v);
                         return null;
                     });
                     if (value instanceof Long || value instanceof Integer) {
-                        builder.addItem("转为16进制", (dialog, view1, integer) -> {
+                        builder.addItem("\u8f6c\u4e3a16\u8fdb\u5236", (dialog, view1, integer) -> {
                             dialog.dismiss();
                             value = "[16n]" + v;
                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder();

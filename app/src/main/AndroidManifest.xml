@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -56,19 +56,16 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="I’m QQ，每一天，乐在沟通。" />
+            android:value="Im QQ，每一天，乐在沟通。" />
         <meta-data
             android:name="xposedminversion"
             android:value="53" />
         <meta-data
             android:name="xposedscope"
             android:resource="@array/xposed_scope" />
-
-        <!--适配华为（huawei）刘海屏-->
         <meta-data
             android:name="android.notch_support"
             android:value="true"/>
-        <!--适配小米（xiaomi）刘海屏-->
         <meta-data
             android:name="notch.config"
             android:value="portrait|landscape" />
