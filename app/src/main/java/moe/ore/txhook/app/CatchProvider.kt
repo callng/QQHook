@@ -64,47 +64,46 @@ class CatchProvider: ContentProvider() {
             when(value.getAsString("mode")) {
                 "md5" -> handler.handleMd5(
                     value.getAsInteger("source"),
-                    value.get("data") as ByteArray? ?: EMPTY_BYTE_ARRAY,
-                    value.get("result") as ByteArray? ?: EMPTY_BYTE_ARRAY,
+                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                 )
                 "tlv.get_buf" -> handler.handleTlvGet(
                     value.getAsInteger("version"),
-                    value.get("data") as ByteArray? ?: EMPTY_BYTE_ARRAY,
+                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                     value.getAsInteger("source"),
                 )
                 "tlv.set_buf" -> handler.handleTlvSet(
                     value.getAsInteger("version"),
-                    value.get("data") as ByteArray? ?: EMPTY_BYTE_ARRAY,
+                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                     value.getAsInteger("source"),
                 )
                 "receive" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
                     true,
                     cmd = value.getAsString("cmd"),
-                    buffer = value.get("buffer") as ByteArray,
-                    uin = value.getAsString("uin").toLong(),
+                    buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    uin = runCatching { value.getAsString("uin").toLong() }.getOrDefault(0L),
                     seq = value.getAsInteger("seq"),
-                    msgCookie = value.get("msgCookie") as ByteArray,
+                    msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                     type = value.getAsString("type"),
                     time = System.currentTimeMillis(),
                     source = value.getAsInteger("source")
-
                 ))
                 "send" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
                     false,
                     cmd = value.getAsString("cmd"),
-                    buffer = value.get("buffer") as ByteArray,
-                    uin = value.getAsString("uin").toLong(),
+                    buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    uin = runCatching { value.getAsString("uin").toLong() }.getOrDefault(0L),
                     seq = value.getAsInteger("seq"),
-                    msgCookie = value.get("msgCookie") as ByteArray? ?: EMPTY_BYTE_ARRAY,
+                    msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                     type = value.getAsString("type"),
                     time = System.currentTimeMillis(),
                     source = value.getAsInteger("source")
                 ))
                 "tea" -> handler.handleTea(
                     value.getAsBoolean("enc"),
-                    value.get("data") as ByteArray? ?: EMPTY_BYTE_ARRAY,
-                    value.get("key") as ByteArray? ?: EMPTY_BYTE_ARRAY,
-                    value.get("result") as ByteArray? ?: EMPTY_BYTE_ARRAY,
+                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    (value.get("key") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
                     value.getAsInteger("source")
                 )
             }

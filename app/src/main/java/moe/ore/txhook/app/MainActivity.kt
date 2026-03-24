@@ -7,19 +7,20 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.view.KeyEvent
-import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,35 +28,40 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.SouthWest
 import androidx.compose.material.icons.rounded.NorthEast
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SouthWest
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,21 +71,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.yuyh.jsonviewer.library.moved.ProtocolViewer
 import kotlinx.serialization.ExperimentalSerializationApi
 import moe.ore.android.AndroKtx
 import moe.ore.android.EasyActivity
 import moe.ore.android.toast.Toast.toast
-import moe.ore.script.Consist
 import moe.ore.txhook.EntryActivity
 import moe.ore.txhook.R
 import moe.ore.txhook.app.model.CaptureAction
@@ -160,19 +164,28 @@ class MainActivity : EasyActivity() {
     }
 
     private fun openPacket(packet: CapturePacket) {
-        startActivity(Intent(this, PacketActivity::class.java).putExtra("data", packet))
+        try {
+            startActivity(Intent(this, PacketActivity::class.java).putExtra("data", packet))
+        } catch (e: Exception) {
+            toast(msg = "打开失败: ${e.message}")
+        }
     }
 
     private fun openAction(action: CaptureAction) {
-        val activityClass = when (action.type) {
-            2 -> TlvActivity::class.java
-            3 -> Md5Activity::class.java
-            else -> TeaActivity::class.java
+        try {
+            val activityClass = when (action.type) {
+                2 -> TlvActivity::class.java
+                3 -> Md5Activity::class.java
+                else -> TeaActivity::class.java
+            }
+            startActivity(Intent(this, activityClass).putExtra("data", action))
+        } catch (e: Exception) {
+            toast(msg = "打开失败: ${e.message}")
         }
-        startActivity(Intent(this, activityClass).putExtra("data", action))
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreen(
     widthSizeClass: WindowWidthSizeClass,
@@ -180,10 +193,6 @@ private fun MainScreen(
     onOpenAction: (CaptureAction) -> Unit,
 ) {
     var mainTab by rememberSaveable { mutableIntStateOf(0) }
-    var modeTab by rememberSaveable { mutableIntStateOf(0) }
-    var searchText by rememberSaveable { mutableStateOf("") }
-    val packets = CaptureRepository.packets
-    val actions = CaptureRepository.actions
 
     val listPadding = when (widthSizeClass) {
         WindowWidthSizeClass.Expanded -> 28.dp
@@ -191,65 +200,85 @@ private fun MainScreen(
         else -> 14.dp
     }
 
-    val filteredPackets = remember(packets.size, searchText) {
-        if (searchText.isBlank()) packets.toList()
-        else packets.filter { it.cmd.contains(searchText, ignoreCase = true) }
-    }
-    val filteredActions = remember(actions.size, searchText) {
-        if (searchText.isBlank()) actions.toList()
-        else actions.filter { actionTitle(it).contains(searchText, ignoreCase = true) }
-    }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .statusBarsPadding()
-                    .padding(start = listPadding, end = listPadding, top = 8.dp, bottom = 8.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(R.string.imqq),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                TabRow(selectedTabIndex = mainTab) {
-                    Tab(
-                        selected = mainTab == 0,
-                        onClick = { mainTab = 0 },
-                        text = { Text(stringResource(R.string.tab_home)) },
-                        icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) },
-                    )
-                    Tab(
-                        selected = mainTab == 1,
-                        onClick = { mainTab = 1 },
-                        text = { Text(stringResource(R.string.tab_settings)) },
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    )
-                }
-            }
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = stringResource(R.string.imqq),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                navigationIcon = {},
+                actions = {},
+                scrollBehavior = scrollBehavior,
+            )
         },
+
         floatingActionButton = {
-            AnimatedVisibility(visible = mainTab == 0, enter = fadeIn(), exit = fadeOut()) {
+            if (mainTab == 0) {
                 val enabled = CaptureRepository.isCatchEnabled
-                val tint by animateFloatAsState(if (enabled) 1f else 0.75f, label = "fab_tint")
                 FloatingActionButton(
                     onClick = { CaptureRepository.updateCatchEnabled(!enabled) },
-                    containerColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    containerColor = if (enabled)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = if (enabled)
+                        MaterialTheme.colorScheme.onPrimary
+                    else
+                        MaterialTheme.colorScheme.onSecondaryContainer,
                 ) {
                     Icon(
                         painter = painterResource(if (enabled) R.drawable.icon_catch else R.drawable.icon_nocatch),
                         contentDescription = stringResource(R.string.start_catch),
-                        modifier = Modifier.size((24 * tint).dp),
                     )
                 }
+            }
+        },
+        bottomBar = {
+            TabRow(
+                selectedTabIndex = mainTab,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ) {
+                Tab(
+                    selected = mainTab == 0,
+                    onClick = { mainTab = 0 },
+                    text = { Text(stringResource(R.string.tab_home)) },
+                    icon = {
+                        Icon(
+                            Icons.Rounded.AutoAwesome,
+                            contentDescription = null,
+                        )
+                    },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Tab(
+                    selected = mainTab == 1,
+                    onClick = { mainTab = 1 },
+                    text = { Text(stringResource(R.string.tab_settings)) },
+                    icon = {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = null,
+                        )
+                    },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
     ) { innerPadding ->
@@ -260,15 +289,6 @@ private fun MainScreen(
                         .fillMaxSize()
                         .padding(innerPadding),
                     horizontalPadding = listPadding,
-                    modeTab = modeTab,
-                    onModeTabChange = { modeTab = it },
-                    searchText = searchText,
-                    onSearchTextChange = { searchText = it },
-                    packets = filteredPackets,
-                    actions = filteredActions,
-                    onClear = {
-                        if (modeTab == 0) CaptureRepository.clearPackets() else CaptureRepository.clearActions()
-                    },
                     onOpenPacket = onOpenPacket,
                     onOpenAction = onOpenAction,
                 )
@@ -284,161 +304,307 @@ private fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeTab(
     modifier: Modifier,
     horizontalPadding: androidx.compose.ui.unit.Dp,
-    modeTab: Int,
-    onModeTabChange: (Int) -> Unit,
-    searchText: String,
-    onSearchTextChange: (String) -> Unit,
-    packets: List<CapturePacket>,
-    actions: List<CaptureAction>,
-    onClear: () -> Unit,
     onOpenPacket: (CapturePacket) -> Unit,
     onOpenAction: (CaptureAction) -> Unit,
 ) {
-    val entries = if (modeTab == 0) packets else actions
+    var modeTab by rememberSaveable { mutableIntStateOf(0) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    val allPackets = CaptureRepository.packets
+    val allActions = CaptureRepository.actions
+
+    // derivedStateOf: 列表变化或搜索词变化都自动重新过滤，搜索时新数据不丢失
+    val filteredPackets by remember {
+        derivedStateOf {
+            val q = searchText.trim()
+            if (q.isBlank()) allPackets
+            else allPackets.filter { pkt ->
+                pkt.cmd.contains(q, ignoreCase = true) ||
+                pkt.seq.toString().contains(q) ||
+                pkt.uin.toString().contains(q)
+            }
+        }
+    }
+    val filteredActions by remember {
+        derivedStateOf {
+            val q = searchText.trim()
+            if (q.isBlank()) allActions
+            else allActions.filter { act ->
+                actionTitle(act).contains(q, ignoreCase = true) ||
+                act.what.toString().contains(q) ||
+                sourceName(act.source).contains(q, ignoreCase = true)
+            }
+        }
+    }
+
+    val entries = if (modeTab == 0) filteredPackets else filteredActions
+    val totalCount = if (modeTab == 0) allPackets.size else allActions.size
+    val isSearching = searchText.isNotBlank()
+
     val listState = rememberLazyListState()
     var previousCount by remember(modeTab) { mutableIntStateOf(entries.size) }
     var followLatest by remember(modeTab) { mutableStateOf(true) }
 
-    LaunchedEffect(
-        listState.firstVisibleItemIndex,
-        listState.firstVisibleItemScrollOffset,
-        listState.isScrollInProgress,
-    ) {
-        val isAtLatest = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
-        if (isAtLatest) {
-            followLatest = true
-        } else if (listState.isScrollInProgress) {
-            followLatest = false
+    val isAtTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
         }
     }
 
+    LaunchedEffect(isAtTop) {
+        if (isAtTop) followLatest = true
+    }
+
     LaunchedEffect(entries.size, searchText, modeTab) {
-        if (searchText.isBlank() && followLatest && entries.size > previousCount) {
+        if (!isSearching && followLatest && entries.size > previousCount) {
             listState.animateScrollToItem(0)
         }
         previousCount = entries.size
     }
 
+    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.ROOT) }
+
+    // 搜索框焦点管理：点击列表区域自动收起键盘
+    val focusManager = LocalFocusManager.current
+
     Column(
-        modifier = modifier.padding(horizontal = horizontalPadding, vertical = 10.dp),
+        modifier = modifier
+            .padding(horizontal = horizontalPadding, vertical = 8.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { focusManager.clearFocus() },
+            ),
     ) {
-        OutlinedTextField(
-            value = searchText,
-            onValueChange = onSearchTextChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.input_search)) },
-            singleLine = true,
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.catch_content),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                FilterChip(
-                    selected = modeTab == 0,
-                    onClick = { onModeTabChange(0) },
-                    label = { Text(stringResource(R.string.capture_mode_sso)) },
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                FilterChip(
-                    selected = modeTab == 1,
-                    onClick = { onModeTabChange(1) },
-                    label = { Text(stringResource(R.string.capture_mode_action)) },
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = onClear) {
-                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_all))
-                }
-            }
+        if (modeTab == 0) {
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("搜索 CMD / SEQ / UIN") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                shape = MaterialTheme.shapes.large,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
+                SegmentedButton(
+                    selected = modeTab == 0,
+                    onClick = {
+                        focusManager.clearFocus()
+                        modeTab = 0
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) {
+                    Text(
+                        text = stringResource(R.string.capture_mode_sso),
+                        modifier = Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                if (allPackets.isNotEmpty()) {
+                                    CaptureRepository.clearPackets()
+                                }
+                            },
+                        ),
+                    )
+                }
+                SegmentedButton(
+                    selected = modeTab == 1,
+                    onClick = {
+                        focusManager.clearFocus()
+                        modeTab = 1
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) {
+                    Text(
+                        text = stringResource(R.string.capture_mode_action),
+                        modifier = Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                if (allActions.isNotEmpty()) {
+                                    CaptureRepository.clearActions()
+                                }
+                            },
+                        ),
+                    )
+                }
+            }
 
-        AnimatedVisibility(visible = entries.isNotEmpty(), modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = if (modeTab == 0 && isSearching) "${entries.size}/${totalCount}"
+                       else "${totalCount}",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (modeTab == 0 && isSearching)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 4.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (entries.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(bottom = 8.dp),
             ) {
                 if (modeTab == 0) {
-                    items(packets, key = { "p-${it.time}-${it.seq}-${it.cmd}" }) { packet ->
-                        PacketCard(packet = packet, onClick = { onOpenPacket(packet) })
+                    items(
+                        items = filteredPackets,
+                        key = { it.uid },
+                    ) { packet ->
+                        PacketCard(
+                            packet = packet,
+                            onClick = { onOpenPacket(packet) },
+                            timeFormat = timeFormat,
+                        )
                     }
                 } else {
-                    items(actions, key = { "a-${it.time}-${it.type}-${it.what}" }) { action ->
-                        ActionCard(action = action, onClick = { onOpenAction(action) })
+                    items(
+                        items = filteredActions,
+                        key = { it.uid },
+                    ) { action ->
+                        ActionCard(
+                            action = action,
+                            onClick = { onOpenAction(action) },
+                            timeFormat = timeFormat,
+                        )
                     }
                 }
             }
-        }
-
-        AnimatedVisibility(visible = entries.isEmpty(), modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.start_catch),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        if (isSearching) Icons.Rounded.Search else Icons.Rounded.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = if (isSearching) "无匹配结果" else stringResource(R.string.start_catch),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PacketCard(packet: CapturePacket, onClick: () -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun PacketCard(packet: CapturePacket, onClick: () -> Unit, timeFormat: SimpleDateFormat) {
+    val isDark = isSystemInDarkTheme()
+    val directionColor = if (packet.from)
+        MaterialTheme.colorScheme.tertiary
+    else
+        MaterialTheme.colorScheme.primary
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark)
+                MaterialTheme.colorScheme.surfaceContainerLow
+            else
+                MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 1.dp,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             androidx.compose.foundation.Image(
                 painter = painterResource(id = sourceIcon(packet.source)),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(6.dp),
+                    .padding(5.dp),
                 contentScale = ContentScale.Fit,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = packet.cmd,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = packet.uin.toString(), color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = packet.seq.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    androidx.compose.foundation.Image(
+                        imageVector = if (packet.from) Icons.Rounded.SouthWest else Icons.Rounded.NorthEast,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(directionColor),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = packet.cmd,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "UIN:${packet.uin}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                    Text(
+                        text = "SEQ:${packet.seq}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = FontFamily.Monospace,
+                    )
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Icon(
-                    imageVector = if (packet.from) Icons.Rounded.SouthWest else Icons.Rounded.NorthEast,
-                    contentDescription = null,
+                Text(
+                    text = timeFormat.format(Date(packet.time)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
                 )
-                Text(text = formatTime(packet.time), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = FormatUtil.formatFileSize(packet.buffer.size.toLong()),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
                 )
             }
         }
@@ -446,41 +612,81 @@ private fun PacketCard(packet: CapturePacket, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ActionCard(action: CaptureAction, onClick: () -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun ActionCard(action: CaptureAction, onClick: () -> Unit, timeFormat: SimpleDateFormat) {
+    val isDark = isSystemInDarkTheme()
+    val directionColor = if (action.from)
+        MaterialTheme.colorScheme.tertiary
+    else
+        MaterialTheme.colorScheme.primary
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark)
+                MaterialTheme.colorScheme.surfaceContainerLow
+            else
+                MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 1.dp,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             androidx.compose.foundation.Image(
                 painter = painterResource(id = sourceIcon(action.source)),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(6.dp),
+                    .padding(5.dp),
                 contentScale = ContentScale.Fit,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.foundation.Image(
+                        imageVector = if (action.from) Icons.Rounded.SouthWest else Icons.Rounded.NorthEast,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(directionColor),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = actionTitle(action),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = actionTitle(action),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    text = sourceName(action.source),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = sourceName(action.source), color = MaterialTheme.colorScheme.primary)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Icon(
-                    imageVector = if (action.from) Icons.Rounded.SouthWest else Icons.Rounded.NorthEast,
-                    contentDescription = null,
+                Text(
+                    text = timeFormat.format(Date(action.time)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
                 )
-                Text(text = formatTime(action.time), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = FormatUtil.formatFileSize(action.buffer.size.toLong()),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
                 )
             }
         }
@@ -493,10 +699,12 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
     var address by remember { mutableStateOf(PrefsManager.getString(KEY_PUSH_API)) }
     var checked by remember { mutableStateOf(address.isNotBlank()) }
     var showDialog by remember { mutableStateOf(false) }
-    var editingAddress by remember { mutableStateOf(address.ifBlank { context.getString(R.string.local_address) }) }
+    var editingAddress by remember {
+        mutableStateOf(address.ifBlank { context.getString(R.string.local_address) })
+    }
 
     if (showDialog) {
-        AlertDialog(
+        androidx.compose.material3.AlertDialog(
             onDismissRequest = {
                 showDialog = false
                 if (!PrefsManager.getString(KEY_PUSH_API).isNullOrBlank()) {
@@ -530,15 +738,30 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
                     onValueChange = { editingAddress = it },
                     label = { Text(stringResource(R.string.input_domain_or_ip)) },
                     singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
                 )
             },
+            shape = MaterialTheme.shapes.extraLarge,
         )
     }
 
     Column(
         modifier = modifier.padding(horizontal = horizontalPadding, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.tab_settings),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -548,14 +771,16 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.pushapi),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = address.ifBlank { stringResource(R.string.not_configured) },
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Switch(
@@ -574,13 +799,57 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
                 )
             }
         }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = "Capture Statistics",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = CaptureRepository.packets.size.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = stringResource(R.string.capture_mode_sso),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = CaptureRepository.actions.size.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                        Text(
+                            text = stringResource(R.string.capture_mode_action),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
-
-private fun formatTime(timestamp: Long): String {
-    return SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(Date(timestamp))
-}
-
-
-
-

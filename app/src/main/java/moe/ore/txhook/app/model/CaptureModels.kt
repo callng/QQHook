@@ -7,6 +7,7 @@ import moe.ore.txhook.helper.EMPTY_BYTE_ARRAY
 data class CaptureAction(
     var type: Int = 0,
 ) : Parcelable {
+    var uid: Long = 0L
     var what: Int = 0
     var from: Boolean = false
     val time: Long = System.currentTimeMillis()
@@ -18,10 +19,10 @@ data class CaptureAction(
     constructor(parcel: Parcel) : this(parcel.readInt()) {
         what = parcel.readInt()
         from = parcel.readByte() != 0.toByte()
-        buffer = parcel.createByteArray()!!
-        result = parcel.createByteArray()!!
+        buffer = parcel.createByteArray() ?: EMPTY_BYTE_ARRAY
+        result = parcel.createByteArray() ?: EMPTY_BYTE_ARRAY
         source = parcel.readInt()
-        key = parcel.createByteArray()!!
+        key = parcel.createByteArray() ?: EMPTY_BYTE_ARRAY
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -54,16 +55,17 @@ data class CapturePacket(
     var source: Int = SourceApp.MQQ,
     var merge: Boolean = false,
     var hash: Int = 0,
+    var uid: Long = 0L,
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readByte() != 0.toByte(),
-        parcel.readString()!!,
+        parcel.readString() ?: "",
         parcel.readInt(),
-        parcel.createByteArray()!!,
+        parcel.createByteArray() ?: EMPTY_BYTE_ARRAY,
         parcel.readLong(),
         parcel.readLong(),
-        parcel.createByteArray()!!,
-        parcel.readString()!!,
+        parcel.createByteArray() ?: EMPTY_BYTE_ARRAY,
+        parcel.readString() ?: "",
         parcel.readInt(),
         parcel.readByte() != 0.toByte(),
         parcel.readInt(),

@@ -1,8 +1,8 @@
 package moe.ore.txhook.app
 
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
@@ -12,21 +12,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.ExperimentalSerializationApi
 import moe.ore.android.EasyActivity
 import moe.ore.txhook.R
 import moe.ore.txhook.app.model.CaptureAction
@@ -50,7 +52,10 @@ class Md5Activity : EasyActivity() {
         )
 
         val action = intent.getParcelableExtra<CaptureAction>("data")
-            ?: error("action must not be null")
+        if (action == null) {
+            finish()
+            return
+        }
 
         setContent {
             TxHookTheme {
@@ -60,15 +65,17 @@ class Md5Activity : EasyActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSerializationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf(
-        stringResource(R.string.tab_detail),
-        stringResource(R.string.tab_data),
-        stringResource(R.string.tab_result),
-    )
+    val tabs = remember {
+        listOf(
+            R.string.tab_detail,
+            R.string.tab_data,
+            R.string.tab_result,
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -82,6 +89,9 @@ private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
     ) { innerPadding ->
@@ -89,16 +99,23 @@ private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            TabRow(selectedTabIndex = tabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(selected = tabIndex == index, onClick = { tabIndex = index }, text = { Text(title) })
+            PrimaryTabRow(selectedTabIndex = tabIndex) {
+                tabs.forEachIndexed { index, titleRes ->
+                    Tab(
+                        selected = tabIndex == index,
+                        onClick = { tabIndex = index },
+                        text = { Text(stringResource(titleRes)) },
+                    )
                 }
             }
 
-            AnimatedContent(targetState = tabIndex, label = "md5_tab") { selected ->
+            AnimatedContent(
+                targetState = tabIndex,
+                label = "md5_tab",
+            ) { selected ->
                 when (selected) {
                     0 -> InfoSections(
                         baseTitle = stringResource(R.string.title_base_info),
@@ -112,7 +129,6 @@ private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
                             stringResource(R.string.field_source_app) to sourceName(action.source),
                         ),
                     )
-
                     1 -> HexViewerCard(action.buffer)
                     else -> HexViewerCard(action.result)
                 }
@@ -120,6 +136,3 @@ private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
         }
     }
 }
-
-
-

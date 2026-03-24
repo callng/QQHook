@@ -26,7 +26,7 @@
     <string name="tab_home">主页</string>
     <string name="tab_settings">设置</string>
     <string name="capture_mode_sso">SSO</string>
-    <string name="capture_mode_action">操作</string>
+    <string name="capture_mode_action">其他</string>
     <string name="tab_detail">详情</string>
     <string name="tab_hex">HEX</string>
     <string name="tab_content">内容</string>

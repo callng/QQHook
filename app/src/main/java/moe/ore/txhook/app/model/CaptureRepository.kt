@@ -5,8 +5,9 @@ package moe.ore.txhook.app.model
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -14,6 +15,8 @@ import moe.ore.protocol.SSOLoginMerge
 import moe.ore.script.Consist
 import moe.ore.txhook.app.CatchProvider
 import moe.ore.txhook.helper.ZipUtil
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 object CaptureRepository {
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -21,10 +24,21 @@ object CaptureRepository {
     val packets = mutableStateListOf<CapturePacket>()
     val actions = mutableStateListOf<CaptureAction>()
 
+    var packetGeneration by mutableIntStateOf(0)
+        private set
+    var actionGeneration by mutableIntStateOf(0)
+        private set
+
     var isCatchEnabled by mutableStateOf(Consist.isCatch)
         private set
 
     private var attached = false
+
+    private val _packetCounter = AtomicInteger(0)
+    private val _actionCounter = AtomicInteger(0)
+
+    private val _nextItemId = AtomicLong(1)
+    fun nextItemId(): Long = _nextItemId.getAndIncrement()
 
     fun attachCatchProvider() {
         if (attached) return
@@ -60,12 +74,18 @@ object CaptureRepository {
 
             override fun handlePacket(time: Long, packet: CapturePacket) {
                 if (packet.cmd == "SSO.LoginMerge") {
-                    var buf = packet.buffer.let { it.sliceArray(4 until it.size) }
-                    if (buf.firstOrNull() == 0x78.toByte()) {
-                        buf = ZipUtil.unCompress(buf)
+                    val buf = if (packet.buffer.size > 4) {
+                        packet.buffer.sliceArray(4 until packet.buffer.size)
+                    } else {
+                        packet.buffer
+                    }
+                    val finalBuf = if (buf.firstOrNull() == 0x78.toByte()) {
+                        runCatching { ZipUtil.unCompress(buf) }.getOrDefault(buf)
+                    } else {
+                        buf
                     }
                     runCatching {
-                        ProtoBuf.decodeFromByteArray<SSOLoginMerge.BusiBuffData>(buf)
+                        ProtoBuf.decodeFromByteArray<SSOLoginMerge.BusiBuffData>(finalBuf)
                     }.onSuccess { merge ->
                         merge.buffList?.forEach {
                             addPacket(
@@ -110,26 +130,35 @@ object CaptureRepository {
 
     fun clearPackets() {
         packets.clear()
+        packetGeneration++
+        _packetCounter.set(0)
     }
 
     fun clearActions() {
         actions.clear()
+        actionGeneration++
+        _actionCounter.set(0)
     }
 
     private fun addPacket(packet: CapturePacket) {
+        val id = nextItemId()
         uiHandler.post {
             if (isCatchEnabled) {
+                packet.uid = id
                 packets.add(0, packet)
+                packetGeneration++
             }
         }
     }
 
     private fun addAction(action: CaptureAction) {
+        val id = nextItemId()
         uiHandler.post {
             if (isCatchEnabled) {
+                action.uid = id
                 actions.add(0, action)
+                actionGeneration++
             }
         }
     }
 }
-

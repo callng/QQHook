@@ -10,17 +10,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import moe.ore.android.EasyActivity
@@ -47,7 +53,10 @@ class PacketActivity : EasyActivity() {
         )
 
         val packet = intent.getParcelableExtra<CapturePacket>("data")
-            ?: error("packet must not be null")
+        if (packet == null) {
+            finish()
+            return
+        }
 
         setContent {
             TxHookTheme {
@@ -61,24 +70,29 @@ class PacketActivity : EasyActivity() {
 @Composable
 private fun PacketScreen(packet: CapturePacket, onBack: () -> Unit) {
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf(
-        stringResource(R.string.tab_detail),
-        stringResource(R.string.tab_analyse),
-        stringResource(R.string.tab_hex),
-    )
+    val tabs = remember {
+        listOf(
+            R.string.tab_detail,
+            R.string.tab_analyse,
+            R.string.tab_hex,
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.catching_info)) },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onBack) {
-                        androidx.compose.material3.Icon(
-                            painter = androidx.compose.ui.res.painterResource(R.drawable.ic_baseline_arrow_back_ios_24),
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_baseline_arrow_back_ios_24),
                             contentDescription = stringResource(R.string.back),
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
     ) { innerPadding ->
@@ -86,16 +100,23 @@ private fun PacketScreen(packet: CapturePacket, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            TabRow(selectedTabIndex = tabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(selected = tabIndex == index, onClick = { tabIndex = index }, text = { Text(title) })
+            PrimaryTabRow(selectedTabIndex = tabIndex) {
+                tabs.forEachIndexed { index, titleRes ->
+                    Tab(
+                        selected = tabIndex == index,
+                        onClick = { tabIndex = index },
+                        text = { Text(stringResource(titleRes)) },
+                    )
                 }
             }
 
-            AnimatedContent(targetState = tabIndex, label = "packet_tab") { selected ->
+            AnimatedContent(
+                targetState = tabIndex,
+                label = "packet_tab",
+            ) { selected ->
                 when (selected) {
                     0 -> InfoSections(
                         baseTitle = stringResource(R.string.title_base_info),
@@ -113,7 +134,6 @@ private fun PacketScreen(packet: CapturePacket, onBack: () -> Unit) {
                             stringResource(R.string.field_source_app) to sourceName(packet.source),
                         ),
                     )
-
                     1 -> ParserToolCard(packet = packet)
                     else -> HexViewerCard(buffer = packet.buffer)
                 }
@@ -125,6 +145,3 @@ private fun PacketScreen(packet: CapturePacket, onBack: () -> Unit) {
 private fun ByteArray.toHexString(): String {
     return joinToString(separator = " ") { b -> "%02X".format(b) }
 }
-
-
-
