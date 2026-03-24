@@ -15,11 +15,10 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".EntryActivity"
+            android:name=".app.MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.SplashTheme">
+            android:label="@string/app_name">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,11 +30,6 @@
         <activity android:name=".app.TeaActivity" />
         <activity android:name=".app.TlvActivity" />
         <activity android:name=".app.Md5Activity" />
-
-        <activity
-            android:name=".app.MainActivity"
-            android:configChanges="orientation|screenSize"
-            android:exported="true" />
         <activity
             android:name=".app.PacketActivity"
             android:configChanges="orientation|screenSize"

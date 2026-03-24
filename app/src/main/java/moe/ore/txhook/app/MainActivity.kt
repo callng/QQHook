@@ -32,13 +32,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.NorthEast
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SouthWest
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,14 +84,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.ExperimentalSerializationApi
 import moe.ore.android.AndroKtx
 import moe.ore.android.EasyActivity
 import moe.ore.android.toast.Toast.toast
-import moe.ore.txhook.EntryActivity
 import moe.ore.txhook.R
+import moe.ore.xposed.common.ModeleStatus
 import moe.ore.txhook.app.model.CaptureAction
 import moe.ore.txhook.app.model.CapturePacket
 import moe.ore.txhook.app.model.CaptureRepository
@@ -112,12 +119,6 @@ class MainActivity : EasyActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (!AndroKtx.isInit) {
-            startActivity(Intent(this, EntryActivity::class.java))
-            finish()
-            return
-        }
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
@@ -130,6 +131,10 @@ class MainActivity : EasyActivity() {
             ),
         )
 
+        PrefsManager.initialize(applicationContext)
+        val hasAgreedToTerms = PrefsManager.getBoolean(PrefsManager.KEY_AGREED_TO_TERMS)
+        val isModuleActivated = ModeleStatus.isModuleActivated()
+
         CaptureRepository.attachCatchProvider()
 
         val widthSizeClass = when (resources.configuration.screenWidthDp) {
@@ -137,13 +142,28 @@ class MainActivity : EasyActivity() {
             in 600..839 -> WindowWidthSizeClass.Medium
             else -> WindowWidthSizeClass.Expanded
         }
+
         setContent {
+            var agreed by rememberSaveable { mutableStateOf(hasAgreedToTerms) }
             TxHookTheme {
-                MainScreen(
-                    widthSizeClass = widthSizeClass,
-                    onOpenPacket = { openPacket(it) },
-                    onOpenAction = { openAction(it) },
-                )
+                if (!isModuleActivated || !agreed) {
+                    EntryCheckScreen(
+                        isModuleActivated = isModuleActivated,
+                        onAgree = {
+                            PrefsManager.setBoolean(PrefsManager.KEY_AGREED_TO_TERMS, true)
+                            AndroKtx.isInit = true
+                            agreed = true
+                        },
+                        onDisagree = { finish() },
+                    )
+                } else {
+                    AndroKtx.isInit = true
+                    MainScreen(
+                        widthSizeClass = widthSizeClass,
+                        onOpenPacket = { openPacket(it) },
+                        onOpenAction = { openAction(it) },
+                    )
+                }
             }
         }
     }
@@ -853,5 +873,84 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EntryCheckScreen(
+    isModuleActivated: Boolean,
+    onAgree: () -> Unit,
+    onDisagree: () -> Unit,
+) {
+    if (!isModuleActivated) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    text = "模块未激活",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = "请先在 XP/LSPosed 框架中激活本模块后再使用。",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = onDisagree,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
+                ) {
+                    Text("确认")
+                }
+            },
+            shape = MaterialTheme.shapes.extraLarge,
+        )
+    } else {
+        AlertDialog(
+            onDismissRequest = {},
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        Icons.Rounded.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "使用警告",
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "该软件仅供学习与交流使用，切勿用于违法领域，并请在24小时内删除！\n\n" +
+                            "由于本软件的性质，使用本软件可能导致您的账号被封禁！继续使用则代表您已知晓该风险行为！\n\n" +
+                            "如果您同意以上内容，请点击\"同意\"按钮，否则请点击\"不同意\"按钮并立即删除本软件！",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onAgree) {
+                    Text("同意", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDisagree) {
+                    Text("不同意", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            shape = MaterialTheme.shapes.extraLarge,
+        )
     }
 }
