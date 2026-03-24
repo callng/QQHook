@@ -2,8 +2,8 @@ package moe.ore.txhook.app
 
 import android.os.Bundle
 import android.widget.HorizontalScrollView
-import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -109,7 +109,9 @@ private fun ParserScreen(parsed: Any, onBack: () -> Unit) {
             )
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
@@ -152,4 +154,5 @@ private fun ParserScreen(parsed: Any, onBack: () -> Unit) {
     }
 }
 
-private fun Int.dp(): Int = (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
+private fun Int.dp(): Int =
+    (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()

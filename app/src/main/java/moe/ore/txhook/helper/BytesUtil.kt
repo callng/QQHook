@@ -127,7 +127,7 @@ object BytesUtil {
     @JvmStatic
     fun bufToInt32(bArr: ByteArray, i: Int = 0): Int {
         return (bArr[i].toInt() shl 24 and -16777216) +
-                (bArr[i + 1] .toInt() shl 16 and 16711680) +
+                (bArr[i + 1].toInt() shl 16 and 16711680) +
                 (bArr[i + 2].toInt() shl 8 and 65280) +
                 (bArr[i + 3].toInt() and 255)
     }

@@ -81,7 +81,8 @@ fun getArtApexVersion(context: Context): Long {
 
     try {
         val packageManager = context.packageManager
-        val info = packageManager.getPackageInfo("com.google.android.art", PackageManager.MATCH_APEX)
+        val info =
+            packageManager.getPackageInfo("com.google.android.art", PackageManager.MATCH_APEX)
         return info.longVersionCode
     } catch (_: Throwable) {
         return -1

@@ -29,14 +29,15 @@ fun ByteArray.toInt() = BytesUtil.bufToInt32(this, 0)
 fun ByteArray.toShort(): Short = BytesUtil.bufToInt16(this, 0).toShort()
 
 @JvmOverloads
-fun ByteArray.toHexString(hasSpace: Boolean = false): String = this.joinToString(if(hasSpace) " " else "") {
-    (it.toInt() and 0xFF).toString(16).padStart(2, '0').uppercase(Locale.getDefault())
-}
+fun ByteArray.toHexString(hasSpace: Boolean = false): String =
+    this.joinToString(if (hasSpace) " " else "") {
+        (it.toInt() and 0xFF).toString(16).padStart(2, '0').uppercase(Locale.getDefault())
+    }
 
 fun ByteArray.extractHexSequence(): String? {
     for (i in indices) {
         if (this[i] == 0x01.toByte() && i + 14 <= size) {
-            if (this[i + 2] == this[i + 3] ) { // && this[i + 3] == this[i + 4]
+            if (this[i + 2] == this[i + 3]) { // && this[i + 3] == this[i + 4]
                 return this.copyOfRange(i, i + 14).joinToString("") {
                     "%02X".format(it)
                 }
@@ -59,7 +60,8 @@ fun ByteArray.sub(offset: Int, length: Int) = BytesUtil.subByte(this, offset, le
 fun ByteArray.toAsciiHexString() = joinToString("") {
     if (it in 32..127) it.toInt().toChar().toString() else "{${
         it.toUByte().toString(16).padStart(2, '0').uppercase(
-                Locale.getDefault())
+            Locale.getDefault()
+        )
     }}"
 }
 

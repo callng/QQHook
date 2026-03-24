@@ -5,7 +5,7 @@ import android.os.Looper
 import java.lang.ref.WeakReference
 import java.util.Locale
 
-class Application: android.app.Application() {
+class Application : android.app.Application() {
     init {
         weakSelf = WeakReference(this)
     }

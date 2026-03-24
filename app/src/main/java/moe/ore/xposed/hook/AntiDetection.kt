@@ -24,9 +24,11 @@ internal object AntiDetection {
                     "msf_init_optimize", "msf_network_service_switch_new" -> {
                         if (isSupportedDisablingNewService()) param.result = false
                     }
+
                     "wt_login_upgrade" -> {
                         if (isSupportedDisablingNewService()) param.result = false
                     }
+
                     "nt_login_downgrade" -> { // 强制降级到WT流程
                         if (isSupportedDisablingNewService()) param.result = true
                     }

@@ -57,13 +57,12 @@ import moe.ore.txhook.helper.BytePacketExtKt;
 import moe.ore.txhook.helper.StringExtKt;
 
 public class TarsOutputStream {
+    private final BytePacketBuilder bs = BytePacketExtKt.newBuilder();
     protected Charset sServerEncoding = StandardCharsets.UTF_8;
 
     public void setServerEncoding(Charset se) {
         this.sServerEncoding = se;
     }
-
-    private final BytePacketBuilder bs = BytePacketExtKt.newBuilder();
 
     public BytePacketBuilder getByteBuilder() {
         return bs;

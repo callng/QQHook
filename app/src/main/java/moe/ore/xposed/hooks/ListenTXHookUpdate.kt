@@ -24,7 +24,7 @@ object ListenTXHookUpdate : BaseHook() {
         intent.addAction("android.intent.action.PACKAGE_REPLACED")
         intent.addDataScheme("package")
 
-        val companion = object: BroadcastReceiver() {
+        val companion = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
                     "android.intent.action.PACKAGE_ADDED",

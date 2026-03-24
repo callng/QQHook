@@ -24,12 +24,12 @@ package moe.ore.txhook.helper
 @SuppressWarnings("unchecked")
 object DebugUtil {
     @JvmStatic
-    fun getRunningThread() : Array<Thread> {
+    fun getRunningThread(): Array<Thread> {
         return Thread.getAllStackTraces().keys.toTypedArray()
     }
 
     @JvmStatic
-    fun <T> forcedConvert(any: Any?) : T? {
+    fun <T> forcedConvert(any: Any?): T? {
         return any as? T
     }
 

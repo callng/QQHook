@@ -39,17 +39,8 @@ import moe.ore.txhook.helper.ByteArrayExtKt;
 import moe.ore.txhook.helper.DebugUtil;
 
 public final class TarsInputStream {
+    Charset sServerEncoding = StandardCharsets.UTF_8;
     private ByteBuffer bs;
-
-    public static class HeadData {
-        public byte type;
-        public int tag;
-
-        public void clear() {
-            type = 0;
-            tag = 0;
-        }
-    }
 
     public TarsInputStream() {
 
@@ -68,15 +59,6 @@ public final class TarsInputStream {
         this.bs.position(pos);
     }
 
-    public void warp(byte[] bs) {
-        wrap(bs);
-    }
-
-    public void wrap(byte[] bs) {
-        // this.bs = ByteBuffer.wrap(bs);
-        this.bs = ByteBuffer.wrap(bs);
-    }
-
     public static int readHead(HeadData hd, ByteBuffer bb) {
         byte b = bb.get();
         hd.type = (byte) (b & 15);
@@ -86,6 +68,15 @@ public final class TarsInputStream {
             return 2;
         }
         return 1;
+    }
+
+    public void warp(byte[] bs) {
+        wrap(bs);
+    }
+
+    public void wrap(byte[] bs) {
+        // this.bs = ByteBuffer.wrap(bs);
+        this.bs = ByteBuffer.wrap(bs);
     }
 
     public void readHead(HeadData hd) {
@@ -726,7 +717,8 @@ public final class TarsInputStream {
     }
 
     public <T> T[] readArray(T[] l, int tag, boolean isRequire) {
-        if (l == null || l.length == 0) throw new TarsDecodeException("unable to get type of key and value.");
+        if (l == null || l.length == 0)
+            throw new TarsDecodeException("unable to get type of key and value.");
         return readArrayImpl(l[0], tag, isRequire);
     }
 
@@ -772,7 +764,8 @@ public final class TarsInputStream {
 
             HeadData hd = new HeadData();
             readHead(hd);
-            if (hd.type != TarsBase.STRUCT_BEGIN) throw new TarsDecodeException("[" + tag + "]type mismatch.");
+            if (hd.type != TarsBase.STRUCT_BEGIN)
+                throw new TarsDecodeException("[" + tag + "]type mismatch.");
             ref.readFrom(this);
             skipToStructEnd();
         } else if (isRequire) {
@@ -793,7 +786,8 @@ public final class TarsInputStream {
 
             HeadData hd = new HeadData();
             readHead(hd);
-            if (hd.type != TarsBase.STRUCT_BEGIN) throw new TarsDecodeException("[" + tag + "]type mismatch.");
+            if (hd.type != TarsBase.STRUCT_BEGIN)
+                throw new TarsDecodeException("[" + tag + "]type mismatch.");
             ref.readFrom(this);
             skipToStructEnd();
         } else if (isRequire) {
@@ -852,8 +846,6 @@ public final class TarsInputStream {
         }
     }
 
-    Charset sServerEncoding = StandardCharsets.UTF_8;
-
     public int setServerEncoding(Charset se) {
         sServerEncoding = se;
         return 0;
@@ -865,5 +857,15 @@ public final class TarsInputStream {
 
     public byte[] toByteArray() {
         return bs.array();
+    }
+
+    public static class HeadData {
+        public byte type;
+        public int tag;
+
+        public void clear() {
+            type = 0;
+            tag = 0;
+        }
     }
 }

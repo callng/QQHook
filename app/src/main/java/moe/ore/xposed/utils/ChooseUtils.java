@@ -17,7 +17,7 @@ public class ChooseUtils {
     private static final Method countInstancesOfClassMethod;
     private static final Method countInstancesOfClassesMethod;
 
-    private static  Method getInstancesOfClassesMethod ;
+    private static Method getInstancesOfClassesMethod;
 
     static {
         try {
@@ -37,7 +37,7 @@ public class ChooseUtils {
                     Class[].class, Boolean.TYPE);
 
             //android 9.0以上才有这个方法
-            if(android.os.Build.VERSION.SDK_INT>=28) {
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
                 getInstancesOfClassesMethod = c.getDeclaredMethod("getInstancesOfClasses",
                         Class[].class, Boolean.TYPE);
             }
@@ -100,14 +100,14 @@ public class ChooseUtils {
     }
 
     /**
-     *  String gc_count = VMDebug.getRuntimeStat("art.gc.gc-count");
-     *  String gc_time = VMDebug.getRuntimeStat("art.gc.gc-time");
-     *  String bytes_allocated = VMDebug.getRuntimeStat("art.gc.bytes-allocated");
-     *  String bytes_freed = VMDebug.getRuntimeStat("art.gc.bytes-freed");
-     *  String blocking_gc_count = VMDebug.getRuntimeStat("art.gc.blocking-gc-count");
-     *  String blocking_gc_time = VMDebug.getRuntimeStat("art.gc.blocking-gc-time");
-     *  String gc_count_rate_histogram = VMDebug.getRuntimeStat("art.gc.gc-count-rate-histogram");
-     *  String blocking_gc_count_rate_histogram =VMDebug.getRuntimeStat("art.gc.gc-count-rate-histogram");
+     * String gc_count = VMDebug.getRuntimeStat("art.gc.gc-count");
+     * String gc_time = VMDebug.getRuntimeStat("art.gc.gc-time");
+     * String bytes_allocated = VMDebug.getRuntimeStat("art.gc.bytes-allocated");
+     * String bytes_freed = VMDebug.getRuntimeStat("art.gc.bytes-freed");
+     * String blocking_gc_count = VMDebug.getRuntimeStat("art.gc.blocking-gc-count");
+     * String blocking_gc_time = VMDebug.getRuntimeStat("art.gc.blocking-gc-time");
+     * String gc_count_rate_histogram = VMDebug.getRuntimeStat("art.gc.gc-count-rate-histogram");
+     * String blocking_gc_count_rate_histogram =VMDebug.getRuntimeStat("art.gc.gc-count-rate-histogram");
      */
     public static String getRuntimeStat(String statName) throws Exception {
         return (String) getRuntimeStatMethod.invoke(null, statName);

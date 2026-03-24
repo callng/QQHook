@@ -150,8 +150,8 @@ private fun WarningDialog(onAgree: () -> Unit, onDisagree: () -> Unit) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "该软件仅供学习与交流使用，切勿用于违法领域，并请在24小时内删除！\n\n" +
-                        "由于本软件的性质，使用本软件可能导致您的账号被封禁！继续使用则代表您已知晓该风险行为！\n\n" +
-                        "如果您同意以上内容，请点击\"同意\"按钮，否则请点击\"不同意\"按钮并立即删除本软件！",
+                            "由于本软件的性质，使用本软件可能导致您的账号被封禁！继续使用则代表您已知晓该风险行为！\n\n" +
+                            "如果您同意以上内容，请点击\"同意\"按钮，否则请点击\"不同意\"按钮并立即删除本软件！",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 )

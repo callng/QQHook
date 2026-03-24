@@ -1,6 +1,6 @@
 package moe.ore.xposed.utils
 
-object XPClassloader: ClassLoader() {
+object XPClassloader : ClassLoader() {
     lateinit var hostClassLoader: ClassLoader
     lateinit var ctxClassLoader: ClassLoader
 

@@ -46,4 +46,4 @@ fun String.hex2ByteArray(stripWhitespace: Boolean = false): ByteArray {
     return result
 }
 
-fun String.ipToLong() : Int = IpUtil.ip_to_int(this)
+fun String.ipToLong(): Int = IpUtil.ip_to_int(this)

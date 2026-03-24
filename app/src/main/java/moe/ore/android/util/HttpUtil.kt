@@ -26,26 +26,30 @@ import javax.net.ssl.X509TrustManager
 
 object HttpUtil {
     private val JSON: MediaType = "application/json; charset=utf-8".toMediaTypeOrNull()!!
-    private const val DefaultUserAgent = "Mozilla/5.0 (Linux; Android 11; M2002J9E Build/RKQ1.200826.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045514 Mobile Safari/537.36 V1_AND_SQ_8.5.5_1630_YYB_D A_8050500 QQ/8.5.5.5105 NetType/WIFI WebP/0.3.0 Pixel/1080 StatusBarHeight/69 SimpleUISwitch/0 QQTheme/1000 InMagicWin/0"
+    private const val DefaultUserAgent =
+        "Mozilla/5.0 (Linux; Android 11; M2002J9E Build/RKQ1.200826.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045514 Mobile Safari/537.36 V1_AND_SQ_8.5.5_1630_YYB_D A_8050500 QQ/8.5.5.5105 NetType/WIFI WebP/0.3.0 Pixel/1080 StatusBarHeight/69 SimpleUISwitch/0 QQTheme/1000 InMagicWin/0"
     private val client = OkHttpClient.Builder().also {
         it.connectTimeout(30, TimeUnit.SECONDS)
         it.readTimeout(60, TimeUnit.SECONDS)
         it.writeTimeout(60, TimeUnit.SECONDS)
-        it.sslSocketFactory(SSLSocketClient.getSSLSocketFactory()!!, SSLSocketClient.getX509TrustManager()!!)
+        it.sslSocketFactory(
+            SSLSocketClient.getSSLSocketFactory()!!,
+            SSLSocketClient.getX509TrustManager()!!
+        )
         it.hostnameVerifier(SSLSocketClient.getHostnameVerifier())
         // it.proxy(Proxy(Proxy.Type.DIRECT, null))
     }.build()
 
     fun postJson(url: String, json: String) {
         val body = json.toRequestBody(JSON)
-            val request = Request.Builder()
-                .url(url)
-                .post(body)
-                .build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {}
-                override fun onResponse(call: Call, response: Response) {}
-            })
+        val request = Request.Builder()
+            .url(url)
+            .post(body)
+            .build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
+            override fun onResponse(call: Call, response: Response) {}
+        })
     }
 
     fun doGet(
@@ -128,7 +132,8 @@ object HttpUtil {
         fun getX509TrustManager(): X509TrustManager? {
             var trustManager: X509TrustManager? = null
             try {
-                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                val trustManagerFactory =
+                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
                 trustManagerFactory.init(null as KeyStore?)
                 val trustManagers = trustManagerFactory.trustManagers
                 check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {

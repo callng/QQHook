@@ -229,17 +229,26 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
         itemView.showRight(valueBuilder);
     }
 
+    static class JsonItemViewHolder extends RecyclerView.ViewHolder {
+        JsonItemView itemView;
+
+        JsonItemViewHolder(JsonItemView itemView) {
+            super(itemView);
+            setIsRecyclable(false);
+            this.itemView = itemView;
+        }
+    }
+
     class JsonItemClickListener implements View.OnClickListener {
         private final Context context;
         private final boolean isJsonObject;
-        private Object value;
         private final JsonItemView itemView;
         private final boolean appendComma;
         private final int hierarchy;
-
         private final boolean originalHex;
-        private boolean isCollapsed = true;
         private final boolean isJsonArray;
+        private Object value;
+        private boolean isCollapsed = true;
 
         JsonItemClickListener(Object value, JsonItemView itemView, boolean appendComma, int hierarchy) {
             this.value = value;
@@ -258,7 +267,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
 
         @Override
         public void onClick(View view) {
-            if (isJsonObject || isJsonArray ){
+            if (isJsonObject || isJsonArray) {
                 if (itemView.getChildCount() == 1) { // collapsed -> expand
                     isCollapsed = false;
                     itemView.showIcon(false);
@@ -297,8 +306,7 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
                     }
                     isCollapsed = !isCollapsed;
                 }
-            }
-            else {
+            } else {
                 Dialog.ListAlertBuilder builder = new Dialog.ListAlertBuilder(context);
 
                 if (value instanceof String) {
@@ -415,16 +423,6 @@ public class JsonViewerAdapter extends BaseJsonViewerAdapter<JsonViewerAdapter.J
 
                 builder.show();
             }
-        }
-    }
-
-    static class JsonItemViewHolder extends RecyclerView.ViewHolder {
-        JsonItemView itemView;
-
-        JsonItemViewHolder(JsonItemView itemView) {
-            super(itemView);
-            setIsRecyclable(false);
-            this.itemView = itemView;
         }
     }
 }

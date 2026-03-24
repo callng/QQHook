@@ -23,6 +23,15 @@ public class TarsBase implements Serializable {
 
     public static final int MAX_STRING_LENGTH = 100 * 1024 * 1024;
 
+    public static String toDisplaySimpleString(TarsBase struct) {
+        if (struct == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        struct.displaySimple(sb, 0);
+        return sb.toString();
+    }
+
     @NotNull
     public String servantName() {
         return "";
@@ -106,15 +115,6 @@ public class TarsBase implements Serializable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         display(sb, 0);
-        return sb.toString();
-    }
-
-    public static String toDisplaySimpleString(TarsBase struct) {
-        if (struct == null) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        struct.displaySimple(sb, 0);
         return sb.toString();
     }
 }

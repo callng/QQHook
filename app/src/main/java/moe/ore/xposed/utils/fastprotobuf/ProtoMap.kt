@@ -7,8 +7,8 @@ import kotlinx.serialization.json.JsonElement
 
 class ProtoMap(
     val value: HashMap<Int, ProtoValue>
-): ProtoValue {
-    constructor(): this(hashMapOf())
+) : ProtoValue {
+    constructor() : this(hashMapOf())
 
     override fun has(vararg tags: Int): Boolean {
         var curMap: ProtoMap = this

@@ -32,6 +32,8 @@ import java.util.Random;
  * @author notXX
  */
 public class Crypter {
+    // 随机数对象
+    private static Random random = new Random();
     // 指向当前的明文块
     private byte[] plain;
     // 这指向前面一个明文块
@@ -52,27 +54,24 @@ public class Crypter {
     // 这个表示当前解密开始的位置，之所以要这么一个变量是为了避免当解密到最后时
     // 后面已经没有数据，这时候就会出错，这个变量就是用来判断这种情况免得出错
     private int contextStart;
-    // 随机数对象
-    private static Random random = new Random();
     // 字节输出流
     private ByteArrayOutputStream baos;
+
     /**
      * 构造函数
      */
     public Crypter() {
         baos = new ByteArrayOutputStream(8);
     }
+
     /**
      * 把字节数组从offset开始的len个字节转换成一个unsigned int， 因为java里面没有unsigned，所以unsigned
      * int使用long表示的， 如果len大于8，则认为len等于8。如果len小于8，则高位填0 <br>
      * (edited by notxx) 改变了算法, 性能稍微好一点. 在我的机器上测试10000次, 原始算法花费18s, 这个算法花费12s.
      *
-     * @param in
-     *                   字节数组.
-     * @param offset
-     *                   从哪里开始转换.
-     * @param len
-     *                   转换长度, 如果len超过8则忽略后面的
+     * @param in     字节数组.
+     * @param offset 从哪里开始转换.
+     * @param len    转换长度, 如果len超过8则忽略后面的
      * @return
      */
     private static long getUnsignedInt(byte[] in, int offset, int len) {
@@ -91,15 +90,16 @@ public class Crypter {
 
     /**
      * 解密
-     * @param in 密文
+     *
+     * @param in     密文
      * @param offset 密文开始的位置
-     * @param len 密文长度
-     * @param k 密钥
+     * @param len    密文长度
+     * @param k      密钥
      * @return 明文
      */
     public byte[] decrypt(byte[] in, int offset, int len, byte[] k) {
         // 检查密钥
-        if(k == null)
+        if (k == null)
             return null;
 
         crypt = preCrypt = 0;
@@ -108,18 +108,18 @@ public class Crypter {
         byte[] m = new byte[offset + 8];
 
         // 因为QQ消息加密之后至少是16字节，并且肯定是8的倍数，这里检查这种情况
-        if((len % 8 != 0) || (len < 16)) return null;
+        if ((len % 8 != 0) || (len < 16)) return null;
         // 得到消息的头部，关键是得到真正明文开始的位置，这个信息存在第一个字节里面，所以其用解密得到的第一个字节与7做与
         prePlain = decipher(in, offset);
         pos = prePlain[0] & 0x7;
         // 得到真正明文的长度
         count = len - pos - 10;
         // 如果明文长度小于0，那肯定是出错了，比如传输错误之类的，返回
-        if(count < 0) return null;
+        if (count < 0) return null;
 
         // 这个是临时的preCrypt，和加密时第一个8字节块没有prePlain一样，解密时
         // 第一个8字节块也没有preCrypt，所有这里建一个全0的
-        for(int i = offset; i < m.length; i++)
+        for (int i = offset; i < m.length; i++)
             m[i] = 0;
         // 通过了上面的代码，密文应该是没有问题了，我们分配输出缓冲区
         out = new byte[count];
@@ -137,47 +137,47 @@ public class Crypter {
         // 但是如果不满8，这说明了什么？说明了头8个字节的密文是包含了明文信息的，当然还是要用m把明文弄出来
         // 所以，很显然，满了8的话，说明了头8个字节的密文除了一个长度信息有用之外，其他都是无用的填充
         padding = 1;
-        while(padding <= 2) {
-            if(pos < 8) {
+        while (padding <= 2) {
+            if (pos < 8) {
                 pos++;
                 padding++;
             }
-            if(pos == 8) {
+            if (pos == 8) {
                 m = in;
-                if(!decrypt8Bytes(in, offset, len)) return null;
+                if (!decrypt8Bytes(in, offset, len)) return null;
             }
         }
 
         // 这里是解密的重要阶段，这个时候头部的填充都已经跳过了，开始解密
         // 注意如果上面一个while没有满8，这里第一个if里面用的就是原始的m，否则这个m就是in了
         int i = 0;
-        while(count != 0) {
-            if(pos < 8) {
-                out[i] = (byte)(m[offset + preCrypt + pos] ^ prePlain[pos]);
+        while (count != 0) {
+            if (pos < 8) {
+                out[i] = (byte) (m[offset + preCrypt + pos] ^ prePlain[pos]);
                 i++;
                 count--;
                 pos++;
             }
-            if(pos == 8) {
+            if (pos == 8) {
                 m = in;
                 preCrypt = crypt - 8;
-                if(!decrypt8Bytes(in, offset, len))
+                if (!decrypt8Bytes(in, offset, len))
                     return null;
             }
         }
 
         // 最后的解密部分，上面一个while已经把明文都解出来了，就剩下尾部的填充了，应该全是0
         // 所以这里有检查是否解密了之后是不是0，如果不是的话那肯定出错了，返回null
-        for(padding = 1; padding < 8; padding++) {
-            if(pos < 8) {
-                if((m[offset + preCrypt + pos] ^ prePlain[pos]) != 0)
+        for (padding = 1; padding < 8; padding++) {
+            if (pos < 8) {
+                if ((m[offset + preCrypt + pos] ^ prePlain[pos]) != 0)
                     return null;
                 pos++;
             }
-            if(pos == 8) {
+            if (pos == 8) {
                 m = in;
                 preCrypt = crypt;
-                if(!decrypt8Bytes(in, offset, len))
+                if (!decrypt8Bytes(in, offset, len))
                     return null;
             }
         }
@@ -185,13 +185,10 @@ public class Crypter {
     }
 
     /**
-     * @param in
-     *            需要被解密的密文
-     * @paraminLen
-     *            密文长度
-     * @param k
-     *            密钥
+     * @param in 需要被解密的密文
+     * @param k  密钥
      * @return Message 已解密的消息
+     * @paraminLen 密文长度
      */
     public byte[] decrypt(byte[] in, byte[] k) {
         return decrypt(in, 0, in.length, k);
@@ -199,15 +196,16 @@ public class Crypter {
 
     /**
      * 加密
-     * @param in 明文字节数组
+     *
+     * @param in     明文字节数组
      * @param offset 开始加密的偏移
-     * @param len 加密长度
-     * @param k 密钥
+     * @param len    加密长度
+     * @param k      密钥
      * @return 密文字节数组
      */
     public byte[] encrypt(byte[] in, int offset, int len, byte[] k) {
         // 检查密钥
-        if(k == null)
+        if (k == null)
             return in;
 
         plain = new byte[8];
@@ -220,52 +218,52 @@ public class Crypter {
 
         // 计算头部填充字节数
         pos = (len + 0x0A) % 8;
-        if(pos != 0)
+        if (pos != 0)
             pos = 8 - pos;
         // 计算输出的密文长度
         out = new byte[len + pos + 10];
         // 这里的操作把pos存到了plain的第一个字节里面
         // 0xF8后面三位是空的，正好留给pos，因为pos是0到7的值，表示文本开始的字节位置
-        plain[0] = (byte)((rand() & 0xF8) | pos);
+        plain[0] = (byte) ((rand() & 0xF8) | pos);
 
         // 这里用随机产生的数填充plain[1]到plain[pos]之间的内容
-        for(int i = 1; i <= pos; i++)
-            plain[i] = (byte)(rand() & 0xFF);
+        for (int i = 1; i <= pos; i++)
+            plain[i] = (byte) (rand() & 0xFF);
         pos++;
         // 这个就是prePlain，第一个8字节块当然没有prePlain，所以我们做一个全0的给第一个8字节块
-        for(int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++)
             prePlain[i] = 0x0;
 
         // 继续填充2个字节的随机数，这个过程中如果满了8字节就加密之
         padding = 1;
-        while(padding <= 2) {
-            if(pos < 8) {
-                plain[pos++] = (byte)(rand() & 0xFF);
+        while (padding <= 2) {
+            if (pos < 8) {
+                plain[pos++] = (byte) (rand() & 0xFF);
                 padding++;
             }
-            if(pos == 8)
+            if (pos == 8)
                 encrypt8Bytes();
         }
 
         // 头部填充完了，这里开始填真正的明文了，也是满了8字节就加密，一直到明文读完
         int i = offset;
-        while(len > 0) {
-            if(pos < 8) {
+        while (len > 0) {
+            if (pos < 8) {
                 plain[pos++] = in[i++];
                 len--;
             }
-            if(pos == 8)
+            if (pos == 8)
                 encrypt8Bytes();
         }
 
         // 最后填上0，以保证是8字节的倍数
         padding = 1;
-        while(padding <= 7) {
-            if(pos < 8) {
+        while (padding <= 7) {
+            if (pos < 8) {
                 plain[pos++] = 0x0;
                 padding++;
             }
-            if(pos == 8)
+            if (pos == 8)
                 encrypt8Bytes();
         }
 
@@ -273,13 +271,10 @@ public class Crypter {
     }
 
     /**
-     * @param in
-     *            需要加密的明文
-     * @paraminLen
-     *            明文长度
-     * @param k
-     *            密钥
+     * @param in 需要加密的明文
+     * @param k  密钥
      * @return Message 密文
+     * @paraminLen 明文长度
      */
     public byte[] encrypt(byte[] in, byte[] k) {
         return encrypt(in, 0, in.length, k);
@@ -288,10 +283,8 @@ public class Crypter {
     /**
      * 加密一个8字节块
      *
-     * @param in
-     * 明文字节数组
-     * @return
-     * 密文字节数组
+     * @param in 明文字节数组
+     * @return 密文字节数组
      */
     private byte[] encipher(byte[] in) {
         // 迭代次数，16次
@@ -323,20 +316,17 @@ public class Crypter {
 
         // 最后，我们输出密文，因为我用的long，所以需要强制转换一下变成int
         baos.reset();
-        writeInt((int)y);
-        writeInt((int)z);
+        writeInt((int) y);
+        writeInt((int) z);
         return baos.toByteArray();
     }
 
     /**
      * 解密从offset开始的8字节密文
      *
-     * @param in
-     * 密文字节数组
-     * @param offset
-     * 密文开始位置
-     * @return
-     * 明文
+     * @param in     密文字节数组
+     * @param offset 密文开始位置
+     * @return 明文
      */
     private byte[] decipher(byte[] in, int offset) {
         // 迭代次数，16次
@@ -359,7 +349,7 @@ public class Crypter {
         delta &= 0xFFFFFFFFL;
 
         // 迭代开始了， @_@
-        while(loop-- > 0) {
+        while (loop-- > 0) {
             z -= ((y << 4) + c) ^ (y + sum) ^ ((y >>> 5) + d);
             z &= 0xFFFFFFFFL;
             y -= ((z << 4) + a) ^ (z + sum) ^ ((z >>> 5) + b);
@@ -369,8 +359,8 @@ public class Crypter {
         }
 
         baos.reset();
-        writeInt((int)y);
-        writeInt((int)z);
+        writeInt((int) y);
+        writeInt((int) z);
         return baos.toByteArray();
     }
 
@@ -389,10 +379,8 @@ public class Crypter {
     /**
      * 解密
      *
-     * @param in
-     * 密文
-     * @return
-     * 明文
+     * @param in 密文
+     * @return 明文
      */
     private byte[] decipher(byte[] in) {
         return decipher(in, 0);
@@ -403,8 +391,8 @@ public class Crypter {
      */
     private void encrypt8Bytes() {
         // 这部分完成我上面所说的 plain ^ preCrypt，注意这里判断了是不是第一个8字节块，如果是的话，那个prePlain就当作preCrypt用
-        for(pos = 0; pos < 8; pos++) {
-            if(header)
+        for (pos = 0; pos < 8; pos++) {
+            if (header)
                 plain[pos] ^= prePlain[pos];
             else
                 plain[pos] ^= out[preCrypt + pos];
@@ -415,7 +403,7 @@ public class Crypter {
         System.arraycopy(crypted, 0, out, crypt, 8);
 
         // 这个完成了 f(plain ^ preCrypt) ^ prePlain，ok，下面拷贝一下就行了
-        for(pos = 0; pos < 8; pos++)
+        for (pos = 0; pos < 8; pos++)
             out[crypt + pos] ^= prePlain[pos];
         System.arraycopy(plain, 0, prePlain, 0, 8);
 
@@ -429,26 +417,22 @@ public class Crypter {
     /**
      * 解密8个字节
      *
-     * @param in
-     * 密文字节数组
-     * @param offset
-     * 从何处开始解密
-     * @param len
-     * 密文的长度
-     * @return
-     * true表示解密成功
+     * @param in     密文字节数组
+     * @param offset 从何处开始解密
+     * @param len    密文的长度
+     * @return true表示解密成功
      */
-    private boolean decrypt8Bytes(byte[] in , int offset, int len) {
+    private boolean decrypt8Bytes(byte[] in, int offset, int len) {
         // 这里第一步就是判断后面还有没有数据，没有就返回，如果有，就执行 crypt ^ prePlain
-        for(pos = 0; pos < 8; pos++) {
-            if(contextStart + pos >= len)
+        for (pos = 0; pos < 8; pos++) {
+            if (contextStart + pos >= len)
                 return true;
             prePlain[pos] ^= in[offset + crypt + pos];
         }
 
         // 好，这里执行到了 d(crypt ^ prePlain)
         prePlain = decipher(prePlain);
-        if(prePlain == null)
+        if (prePlain == null)
             return false;
 
         // 解密完成，最后一步好像没做？
@@ -464,8 +448,7 @@ public class Crypter {
      * 这是个随机因子产生器，用来填充头部的，如果为了调试，可以用一个固定值
      * 随机因子可以使相同的明文每次加密出来的密文都不一样
      *
-     * @return
-     * 随机因子
+     * @return 随机因子
      */
     private int rand() {
         return random.nextInt();

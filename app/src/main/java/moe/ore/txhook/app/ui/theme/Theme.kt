@@ -202,6 +202,7 @@ fun TxHookTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+
         darkTheme -> TxHookDarkColors
         else -> TxHookLightColors
     }

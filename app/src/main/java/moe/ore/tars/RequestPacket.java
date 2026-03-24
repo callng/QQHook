@@ -14,11 +14,11 @@ public final class RequestPacket extends TarsBase {
     public byte[] buffer;
     public Map<String, String> context;
     public String funcName;
+    public String servantName;
+    public Map status;
     private int messageType;
     private byte packetType;
     private int requestId;
-    public String servantName;
-    public Map status;
     private int timeout;
     private int version;
 

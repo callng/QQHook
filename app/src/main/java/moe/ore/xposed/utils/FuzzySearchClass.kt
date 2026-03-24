@@ -1,14 +1,14 @@
 package moe.ore.xposed.utils
 
-import java.lang.reflect.Method
 import java.lang.reflect.Field
+import java.lang.reflect.Method
 
 object FuzzySearchClass {
     /**
      * QQ混淆字典
      */
     private val dic = arrayOf(
-        "r" , "t", "o", "a", "b", "c", "e", "f", "d", "g", "h", "i", "j",
+        "r", "t", "o", "a", "b", "c", "e", "f", "d", "g", "h", "i", "j",
         "k", "l", "m", "n", "p", "q", "s", "t", "u", "v", "w", "x", "y", "z"
     )
     private val rangePrefixes = ('a'..'h').map { "${it}0" }
@@ -45,7 +45,11 @@ object FuzzySearchClass {
         return null
     }
 
-    fun findAllClassByField(classLoader: ClassLoader, prefix: String, check: (String, Field) -> Boolean): List<Class<*>> {
+    fun findAllClassByField(
+        classLoader: ClassLoader,
+        prefix: String,
+        check: (String, Field) -> Boolean
+    ): List<Class<*>> {
         val list = arrayListOf<Class<*>>()
         dic.forEach { className ->
             kotlin.runCatching {

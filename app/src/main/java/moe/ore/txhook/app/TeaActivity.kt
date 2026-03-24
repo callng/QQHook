@@ -1,8 +1,8 @@
 package moe.ore.txhook.app
 
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
@@ -135,6 +135,7 @@ private fun TeaScreen(action: CaptureAction, onBack: () -> Unit) {
                             stringResource(R.string.field_source_app) to sourceName(action.source),
                         ),
                     )
+
                     1 -> HexViewerCard(action.buffer)
                     else -> HexViewerCard(action.result)
                 }

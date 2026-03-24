@@ -129,6 +129,7 @@ private fun Md5Screen(action: CaptureAction, onBack: () -> Unit) {
                             stringResource(R.string.field_source_app) to sourceName(action.source),
                         ),
                     )
+
                     1 -> HexViewerCard(action.buffer)
                     else -> HexViewerCard(action.result)
                 }

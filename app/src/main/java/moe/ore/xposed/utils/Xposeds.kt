@@ -24,7 +24,7 @@ internal class XCHook {
     }
 }
 
-class Nullable<T: Any>(
+class Nullable<T : Any>(
     private var value: T?
 ) {
     fun get(): T {
@@ -48,7 +48,7 @@ class Nullable<T: Any>(
     }
 }
 
-fun <T: Any> nullableOf(data: T? = null): Nullable<T> {
+fun <T : Any> nullableOf(data: T? = null): Nullable<T> {
     return Nullable(data)
 }
 
@@ -102,7 +102,12 @@ fun Class<*>?.hookMethod(funName: String?, vararg args: Class<*>): XposedMethodH
     }
 }
 
-fun hookMethod(clz: String?, loader: ClassLoader?, funName: String?, vararg args: Class<*>): XposedMethodHook? {
+fun hookMethod(
+    clz: String?,
+    loader: ClassLoader?,
+    funName: String?,
+    vararg args: Class<*>
+): XposedMethodHook? {
     return try {
         val hook = XposedMethodHook()
 
@@ -128,22 +133,25 @@ fun hookMethod(clz: String?, loader: ClassLoader?, funName: String?, vararg args
 }
 
 fun beforeHook(block: (param: MethodHookParam) -> Unit): XC_MethodHook {
-    return object :XC_MethodHook() {
+    return object : XC_MethodHook() {
         override fun afterHookedMethod(param: MethodHookParam) {
             block(param)
         }
     }
 }
 
-fun afterHook(ver: Int = XCallback.PRIORITY_DEFAULT, block: (param: MethodHookParam) -> Unit): XC_MethodHook {
-    return object :XC_MethodHook(ver) {
+fun afterHook(
+    ver: Int = XCallback.PRIORITY_DEFAULT,
+    block: (param: MethodHookParam) -> Unit
+): XC_MethodHook {
+    return object : XC_MethodHook(ver) {
         override fun afterHookedMethod(param: MethodHookParam) {
             block(param)
         }
     }
 }
 
-class XposedMethodHook: XC_MethodHook() {
+class XposedMethodHook : XC_MethodHook() {
     private lateinit var beforeFun: XposedMethodHookFunction
     private lateinit var afterFun: XposedMethodHookFunction
 

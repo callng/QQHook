@@ -101,7 +101,9 @@ fun InfoCard(title: String, items: List<Pair<String, String>>, modifier: Modifie
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
@@ -156,7 +158,9 @@ fun HexViewerCard(buffer: ByteArray, title: String = stringResource(R.string.hex
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -376,4 +380,5 @@ fun ParserToolCard(packet: CapturePacket) {
     }
 }
 
-private fun Int.dp(): Int = (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
+private fun Int.dp(): Int =
+    (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()

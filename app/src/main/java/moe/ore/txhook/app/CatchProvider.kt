@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalSerializationApi::class)
+
 package moe.ore.txhook.app
 
 import android.content.ContentProvider
@@ -22,7 +23,7 @@ import moe.ore.txhook.helper.EMPTY_BYTE_ARRAY
 import moe.ore.xposed.utils.PrefsManager
 import moe.ore.xposed.utils.PrefsManager.KEY_PUSH_API
 
-class CatchProvider: ContentProvider() {
+class CatchProvider : ContentProvider() {
     private lateinit var matcher: UriMatcher
 
     override fun onCreate(): Boolean {
@@ -41,7 +42,7 @@ class CatchProvider: ContentProvider() {
         selectionArgs: Array<out String>?,
         sortOrder: String?
     ): Cursor? {
-        when(selection) {
+        when (selection) {
             KEY_PUSH_API -> {
                 return FakeCursor().apply {
                     put(KEY_PUSH_API, PrefsManager.getString(KEY_PUSH_API))
@@ -52,7 +53,7 @@ class CatchProvider: ContentProvider() {
     }
 
     override fun getType(uri: Uri): String? {
-        return when(matcher.match(uri)) {
+        return when (matcher.match(uri)) {
             1 -> "TxHookTestData"
             2 -> "running"
             else -> null
@@ -60,54 +61,69 @@ class CatchProvider: ContentProvider() {
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri {
-        if (AndroKtx.isInit) values?.let { value -> catchHandler?.let { handler ->
-            when(value.getAsString("mode")) {
-                "md5" -> handler.handleMd5(
-                    value.getAsInteger("source"),
-                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                )
-                "tlv.get_buf" -> handler.handleTlvGet(
-                    value.getAsInteger("version"),
-                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    value.getAsInteger("source"),
-                )
-                "tlv.set_buf" -> handler.handleTlvSet(
-                    value.getAsInteger("version"),
-                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    value.getAsInteger("source"),
-                )
-                "receive" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
-                    true,
-                    cmd = value.getAsString("cmd"),
-                    buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    uin = runCatching { value.getAsString("uin").toLong() }.getOrDefault(0L),
-                    seq = value.getAsInteger("seq"),
-                    msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    type = value.getAsString("type"),
-                    time = System.currentTimeMillis(),
-                    source = value.getAsInteger("source")
-                ))
-                "send" -> handler.handlePacket(System.currentTimeMillis(), CapturePacket(
-                    false,
-                    cmd = value.getAsString("cmd"),
-                    buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    uin = runCatching { value.getAsString("uin").toLong() }.getOrDefault(0L),
-                    seq = value.getAsInteger("seq"),
-                    msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    type = value.getAsString("type"),
-                    time = System.currentTimeMillis(),
-                    source = value.getAsInteger("source")
-                ))
-                "tea" -> handler.handleTea(
-                    value.getAsBoolean("enc"),
-                    (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    (value.get("key") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
-                    value.getAsInteger("source")
-                )
+        if (AndroKtx.isInit) values?.let { value ->
+            catchHandler?.let { handler ->
+                when (value.getAsString("mode")) {
+                    "md5" -> handler.handleMd5(
+                        value.getAsInteger("source"),
+                        (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                    )
+
+                    "tlv.get_buf" -> handler.handleTlvGet(
+                        value.getAsInteger("version"),
+                        (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        value.getAsInteger("source"),
+                    )
+
+                    "tlv.set_buf" -> handler.handleTlvSet(
+                        value.getAsInteger("version"),
+                        (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        value.getAsInteger("source"),
+                    )
+
+                    "receive" -> handler.handlePacket(
+                        System.currentTimeMillis(), CapturePacket(
+                            true,
+                            cmd = value.getAsString("cmd"),
+                            buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                            uin = runCatching {
+                                value.getAsString("uin").toLong()
+                            }.getOrDefault(0L),
+                            seq = value.getAsInteger("seq"),
+                            msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                            type = value.getAsString("type"),
+                            time = System.currentTimeMillis(),
+                            source = value.getAsInteger("source")
+                        )
+                    )
+
+                    "send" -> handler.handlePacket(
+                        System.currentTimeMillis(), CapturePacket(
+                            false,
+                            cmd = value.getAsString("cmd"),
+                            buffer = (value.get("buffer") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                            uin = runCatching {
+                                value.getAsString("uin").toLong()
+                            }.getOrDefault(0L),
+                            seq = value.getAsInteger("seq"),
+                            msgCookie = (value.get("msgCookie") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                            type = value.getAsString("type"),
+                            time = System.currentTimeMillis(),
+                            source = value.getAsInteger("source")
+                        )
+                    )
+
+                    "tea" -> handler.handleTea(
+                        value.getAsBoolean("enc"),
+                        (value.get("data") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        (value.get("key") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        (value.get("result") as? ByteArray) ?: EMPTY_BYTE_ARRAY,
+                        value.getAsInteger("source")
+                    )
+                }
             }
-        } }
+        }
         return uri
     }
 
@@ -139,12 +155,18 @@ class CatchProvider: ContentProvider() {
 
             abstract fun handlePacket(time: Long, packet: CapturePacket)
 
-            abstract fun handleTea(isEnc: Boolean, data: ByteArray, key: ByteArray, result: ByteArray, source: Int)
+            abstract fun handleTea(
+                isEnc: Boolean,
+                data: ByteArray,
+                key: ByteArray,
+                result: ByteArray,
+                source: Int
+            )
         }
     }
 }
 
-class FakeCursor: Cursor, HashMap<String, Any>() {
+class FakeCursor : Cursor, HashMap<String, Any>() {
     override fun close() {
 
     }
@@ -302,9 +324,11 @@ class FakeCursor: Cursor, HashMap<String, Any>() {
                 is String -> {
                     bundle.putString(it.key, it.value as String)
                 }
+
                 is ByteArray -> {
                     bundle.putByteArray(it.key, it.value as ByteArray)
                 }
+
                 is Number -> {
                     bundle.putInt(it.key, it.value as Int)
                 }

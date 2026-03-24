@@ -25,8 +25,8 @@ import moe.ore.txhook.helper.HexUtil;
 import moe.ore.txhook.helper.KotlinExtKt;
 
 public final class HttpUtil {
-    public static WeakReference<Context> contextWeakReference;
     private static final Uri URI_GET_TXHOOK_STATE = Uri.parse("content://" + CatchProvider.MY_URI + "/" + Consist.GET_TXHOOK_STATE);
+    public static WeakReference<Context> contextWeakReference;
     // private static final Uri URI_GET_TXHOOK_WS_STATE = Uri.parse("content://" + CatchProvider.MY_URI + "/" + Consist.GET_TXHOOK_WS_STATE);
     public static ContentResolver contentResolver;
 
@@ -96,13 +96,13 @@ public final class HttpUtil {
         if (PrefsManager.INSTANCE.isInitialized()) {
             url = PrefsManager.INSTANCE.getString(KEY_PUSH_API, "");
         }
-        if (contentResolver!= null) {
+        if (contentResolver != null) {
             try {
                 Cursor cursor = contentResolver.query(URI_GET_TXHOOK_STATE, null, KEY_PUSH_API, null, null);
-                if (cursor!= null) {
+                if (cursor != null) {
                     try {
                         Bundle extras = cursor.getExtras();
-                        if (extras!= null) {
+                        if (extras != null) {
                             url = extras.getString(KEY_PUSH_API);
                         }
                     } catch (Exception ignored) {

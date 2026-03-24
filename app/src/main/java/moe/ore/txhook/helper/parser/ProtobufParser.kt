@@ -7,8 +7,8 @@ import moe.ore.txhook.helper.sub
 import moe.ore.txhook.helper.toHexString
 
 class ProtobufParser
-    @JvmOverloads
-    constructor(buffer: ByteArray, pos: Int = 0) {
+@JvmOverloads
+constructor(buffer: ByteArray, pos: Int = 0) {
 
     private val buffer = buffer.sub(pos, buffer.size - pos)
 
@@ -29,7 +29,12 @@ class ProtobufParser
             printUnknownField(number, WireFormat.WIRETYPE_VARINT, field.varintList, objects)
             printUnknownField(number, WireFormat.WIRETYPE_FIXED32, field.fixed32List, objects)
             printUnknownField(number, WireFormat.WIRETYPE_FIXED64, field.fixed64List, objects)
-            printUnknownField(number, WireFormat.WIRETYPE_LENGTH_DELIMITED, field.lengthDelimitedList, objects)
+            printUnknownField(
+                number,
+                WireFormat.WIRETYPE_LENGTH_DELIMITED,
+                field.lengthDelimitedList,
+                objects
+            )
 
             field.groupList.forEach { value ->
                 val jsonObject = NewJsonObject()
@@ -39,14 +44,19 @@ class ProtobufParser
         }
     }
 
-    private fun printUnknownField(number: Int, wireType: Int, values: List<*>, objects: NewJsonObject) {
+    private fun printUnknownField(
+        number: Int,
+        wireType: Int,
+        values: List<*>,
+        objects: NewJsonObject
+    ) {
         values.forEach {
             printUnknownFieldValue(number, wireType, it, objects)
         }
     }
 
     private fun printUnknownFieldValue(number: Int, tag: Int, value: Any?, objects: NewJsonObject) {
-        when(WireFormat.getTagWireType(tag)) {
+        when (WireFormat.getTagWireType(tag)) {
             WireFormat.WIRETYPE_VARINT -> objects.put(number.toString(), value as Long)
             WireFormat.WIRETYPE_FIXED32 -> objects.put(number.toString(), value as Int)
             WireFormat.WIRETYPE_FIXED64 -> objects.put(number.toString(), value as Long)
@@ -63,11 +73,13 @@ class ProtobufParser
                 }
 
             }
+
             WireFormat.WIRETYPE_START_GROUP -> {
                 val json = NewJsonObject()
                 printUnknownFields(value as UnknownFieldSet, json)
                 objects.put(number.toString(), json)
             }
+
             else -> throw RuntimeException("can not to parse the protobuf data")
         }
     }

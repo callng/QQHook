@@ -37,7 +37,7 @@ object ProtoUtils {
     }
 
     internal fun any2proto(any: Any): ProtoValue {
-        return when(any) {
+        return when (any) {
             is Number -> any.proto
             is ByteArray -> any.proto
             is String -> any.proto
@@ -47,6 +47,7 @@ object ProtoUtils {
             is Map<*, *> -> ProtoMap(hashMapOf(*any.map { (k, v) ->
                 k as Int to any2proto(v!!)
             }.toTypedArray()))
+
             is Pair<*, *> -> {
                 val (tag, v) = any
                 val value = any2proto(v!!)
@@ -55,10 +56,12 @@ object ProtoUtils {
                         val tags = walkPairTags(tag)
                         set(*tags.toIntArray(), v = value)
                     }
+
                     is Number -> ProtoMap(hashMapOf(tag.toInt() to value))
                     else -> error("Not support type for tag: ${tag.toString()}")
                 }
             }
+
             else -> error("Not support type: ${any::class.simpleName}")
         }
     }

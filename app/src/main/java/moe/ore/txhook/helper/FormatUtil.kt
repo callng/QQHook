@@ -1,4 +1,3 @@
-
 package moe.ore.txhook.helper
 
 import java.math.BigDecimal

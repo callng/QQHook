@@ -16,16 +16,52 @@ import org.json.JSONObject;
  * Created by yuyuhang on 2017/11/30.
  */
 public class ProtocolViewer extends RecyclerView {
-    public interface OnBindListener {
-        void onBindString(String json);
-
-        void onBindObject(JSONObject json);
-
-        void onBindArray(JSONArray json);
-    }
-
+    int mode;
+    float oldDist;
     private OnBindListener onBindListener = null;
     private BaseJsonViewerAdapter mAdapter;
+    private final OnItemTouchListener touchListener = new OnItemTouchListener() {
+        @Override
+        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent event) {
+            switch (event.getAction() & event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    mode = 1;
+                    break;
+                case MotionEvent.ACTION_UP:
+                    mode = 0;
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    mode -= 1;
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    oldDist = spacing(event);
+                    mode += 1;
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (mode >= 2) {
+                        float newDist = spacing(event);
+                        if (Math.abs(newDist - oldDist) > 0.5f) {
+                            zoom(newDist / oldDist);
+                            oldDist = newDist;
+                        }
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        @Override
+        public void onTouchEvent(RecyclerView rv, MotionEvent event) {
+
+        }
+
+        @Override
+        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+        }
+    };
+
     public ProtocolViewer(Context context) {
         this(context, null);
     }
@@ -151,9 +187,6 @@ public class ProtocolViewer extends RecyclerView {
         }
     }
 
-    int mode;
-    float oldDist;
-
     private void zoom(float f) {
         setTextSize(BaseJsonViewerAdapter.TEXT_SIZE_DP * f);
     }
@@ -164,45 +197,11 @@ public class ProtocolViewer extends RecyclerView {
         return (float) Math.sqrt(x * x + y * y);
     }
 
-    private final OnItemTouchListener touchListener = new OnItemTouchListener() {
-        @Override
-        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent event) {
-            switch (event.getAction() & event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    mode = 1;
-                    break;
-                case MotionEvent.ACTION_UP:
-                    mode = 0;
-                    break;
-                case MotionEvent.ACTION_POINTER_UP:
-                    mode -= 1;
-                    break;
-                case MotionEvent.ACTION_POINTER_DOWN:
-                    oldDist = spacing(event);
-                    mode += 1;
-                    break;
+    public interface OnBindListener {
+        void onBindString(String json);
 
-                case MotionEvent.ACTION_MOVE:
-                    if (mode >= 2) {
-                        float newDist = spacing(event);
-                        if (Math.abs(newDist - oldDist) > 0.5f) {
-                            zoom(newDist / oldDist);
-                            oldDist = newDist;
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
+        void onBindObject(JSONObject json);
 
-        @Override
-        public void onTouchEvent(RecyclerView rv, MotionEvent event) {
-
-        }
-
-        @Override
-        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
-        }
-    };
+        void onBindArray(JSONArray json);
+    }
 }

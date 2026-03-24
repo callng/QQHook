@@ -129,7 +129,10 @@ object Dialog {
             return this
         }
 
-        override fun setPositiveButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setPositiveButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setPositiveButton(context.getString(textId), listener)
         }
 
@@ -144,7 +147,10 @@ object Dialog {
             return this
         }
 
-        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setNegativeButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
@@ -177,7 +183,8 @@ object Dialog {
 
         private var negativeListener: DialogInterface.OnClickListener? = null
         private var dialog: AlertDialog? = null
-        private val items: LinkedHashMap<String, ((AlertDialog, View, Int) -> Unit)?> = linkedMapOf()
+        private val items: LinkedHashMap<String, ((AlertDialog, View, Int) -> Unit)?> =
+            linkedMapOf()
 
         init {
             val context = this.context
@@ -224,7 +231,10 @@ object Dialog {
             return this
         }
 
-        fun addItem(name: String, block: ((dialog: AlertDialog, v: View, pos: Int) -> Unit)?): ListAlertBuilder {
+        fun addItem(
+            name: String,
+            block: ((dialog: AlertDialog, v: View, pos: Int) -> Unit)?
+        ): ListAlertBuilder {
             items[name] = block
             return this
         }
@@ -240,7 +250,10 @@ object Dialog {
             return this
         }
 
-        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setNegativeButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
@@ -377,7 +390,10 @@ object Dialog {
             return this
         }
 
-        override fun setPositiveButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setPositiveButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setPositiveButton(context.getString(textId), listener)
         }
 
@@ -392,7 +408,10 @@ object Dialog {
             return this
         }
 
-        override fun setNegativeButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setNegativeButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setNegativeButton(context.getString(textId), listener)
         }
 
@@ -407,7 +426,10 @@ object Dialog {
             return this
         }
 
-        override fun setNeutralButton(@StringRes textId: Int, listener: DialogInterface.OnClickListener): AlertDialog.Builder {
+        override fun setNeutralButton(
+            @StringRes textId: Int,
+            listener: DialogInterface.OnClickListener
+        ): AlertDialog.Builder {
             return setNeutralButton(context.getString(textId), listener)
         }
 

@@ -16,6 +16,10 @@ public class MD5 {
     private final byte[] digest = new byte[16];
     private final long[] state = new long[4];
 
+    public MD5() {
+        md5Init();
+    }
+
     public static String hexDigest(String str) {
         if (str == null) {
             return "";
@@ -59,6 +63,97 @@ public class MD5 {
         }
     }
 
+    public static long b2iu(byte b) {
+        return b < 0 ? (long) (b & 255) : (long) b;
+    }
+
+    public static String byteHEX(byte b) {
+        char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+        return new String(new char[]{cArr[(b >>> 4) & 15], cArr[b & 15]});
+    }
+
+    public static byte[] toMD5Byte(byte[] bArr) {
+        return new MD5().getMD5(bArr);
+    }
+
+    public static byte[] toMD5Byte(String str) {
+        byte[] bytes;
+        try {
+            bytes = str.getBytes("ISO8859_1");
+        } catch (UnsupportedEncodingException e) {
+            bytes = str.getBytes();
+        }
+        return new MD5().getMD5(bytes);
+    }
+
+    public static byte[] toMD5Byte(InputStream inputStream, long j) {
+        return new MD5().getMD5(inputStream, j);
+    }
+
+    public static String toMD5(byte[] bArr) {
+        byte[] md5 = new MD5().getMD5(bArr);
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            str.append(byteHEX(md5[i]));
+        }
+        return str.toString();
+    }
+
+    public static String toMD5(String str) {
+        byte[] bytes;
+        try {
+            bytes = str.getBytes("ISO8859_1");
+        } catch (UnsupportedEncodingException e) {
+            bytes = str.getBytes();
+        }
+        byte[] md5 = new MD5().getMD5(bytes);
+        StringBuilder str2 = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            str2.append(byteHEX(md5[i]));
+        }
+        return str2.toString();
+    }
+
+    public static String getMD5String(byte[] bArr) {
+        char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        try {
+            MessageDigest instance = MessageDigest.getInstance("MD5");
+            instance.update(bArr);
+            return cha(cArr, instance);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static String getFileMD5(File file) {
+        if (file == null) {
+            return "";
+        }
+        try {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            byte[] bArr = new byte[8192];
+            char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+            try {
+                MessageDigest instance = MessageDigest.getInstance("MD5");
+                while (true) {
+                    int read = fileInputStream.read(bArr, 0, bArr.length);
+                    if (read == -1) {
+                        break;
+                    }
+                    instance.update(bArr, 0, read);
+                }
+                fileInputStream.close();
+                return cha(cArr, instance);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        } catch (Exception e2) {
+            return "";
+        }
+    }
+
     public byte[] getMD5(byte[] bArr) {
         md5Init();
         md5Update(new ByteArrayInputStream(bArr), bArr.length);
@@ -73,10 +168,6 @@ public class MD5 {
         }
         md5Final();
         return this.digest;
-    }
-
-    public MD5() {
-        md5Init();
     }
 
     private void md5Init() {
@@ -312,97 +403,6 @@ public class MD5 {
         for (int i3 = 0; i3 < i; i3 += 4) {
             jArr[i2] = b2iu(bArr[i3]) | (b2iu(bArr[i3 + 1]) << 8) | (b2iu(bArr[i3 + 2]) << 16) | (b2iu(bArr[i3 + 3]) << 24);
             i2++;
-        }
-    }
-
-    public static long b2iu(byte b) {
-        return b < 0 ? (long) (b & 255) : (long) b;
-    }
-
-    public static String byteHEX(byte b) {
-        char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-        return new String(new char[]{cArr[(b >>> 4) & 15], cArr[b & 15]});
-    }
-
-    public static byte[] toMD5Byte(byte[] bArr) {
-        return new MD5().getMD5(bArr);
-    }
-
-    public static byte[] toMD5Byte(String str) {
-        byte[] bytes;
-        try {
-            bytes = str.getBytes("ISO8859_1");
-        } catch (UnsupportedEncodingException e) {
-            bytes = str.getBytes();
-        }
-        return new MD5().getMD5(bytes);
-    }
-
-    public static byte[] toMD5Byte(InputStream inputStream, long j) {
-        return new MD5().getMD5(inputStream, j);
-    }
-
-    public static String toMD5(byte[] bArr) {
-        byte[] md5 = new MD5().getMD5(bArr);
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < 16; i++) {
-            str.append(byteHEX(md5[i]));
-        }
-        return str.toString();
-    }
-
-    public static String toMD5(String str) {
-        byte[] bytes;
-        try {
-            bytes = str.getBytes("ISO8859_1");
-        } catch (UnsupportedEncodingException e) {
-            bytes = str.getBytes();
-        }
-        byte[] md5 = new MD5().getMD5(bytes);
-        StringBuilder str2 = new StringBuilder();
-        for (int i = 0; i < 16; i++) {
-            str2.append(byteHEX(md5[i]));
-        }
-        return str2.toString();
-    }
-
-    public static String getMD5String(byte[] bArr) {
-        char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-        try {
-            MessageDigest instance = MessageDigest.getInstance("MD5");
-            instance.update(bArr);
-            return cha(cArr, instance);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public static String getFileMD5(File file) {
-        if (file == null) {
-            return "";
-        }
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            byte[] bArr = new byte[8192];
-            char[] cArr = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-            try {
-                MessageDigest instance = MessageDigest.getInstance("MD5");
-                while (true) {
-                    int read = fileInputStream.read(bArr, 0, bArr.length);
-                    if (read == -1) {
-                        break;
-                    }
-                    instance.update(bArr, 0, read);
-                }
-                fileInputStream.close();
-                return cha(cArr, instance);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-        } catch (Exception e2) {
-            return "";
         }
     }
 }

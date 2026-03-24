@@ -2,7 +2,7 @@ package moe.ore.txhook.helper.parser
 
 import org.json.JSONObject
 
-class NewJsonObject: JSONObject() {
+class NewJsonObject : JSONObject() {
     override fun put(name: String, value: Int): JSONObject {
         val n = getNameByOldName(name)
         return super.put(n, value)

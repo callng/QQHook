@@ -5,8 +5,8 @@
 
     <item>
         <bitmap
-            android:src="@drawable/icon_cake"
-            android:gravity="center"/>
+            android:gravity="center"
+            android:src="@drawable/icon_cake" />
     </item>
 
 </layer-list>

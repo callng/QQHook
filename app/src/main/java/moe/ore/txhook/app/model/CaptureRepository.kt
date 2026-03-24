@@ -111,7 +111,13 @@ object CaptureRepository {
                 }
             }
 
-            override fun handleTea(isEnc: Boolean, data: ByteArray, key: ByteArray, result: ByteArray, source: Int) {
+            override fun handleTea(
+                isEnc: Boolean,
+                data: ByteArray,
+                key: ByteArray,
+                result: ByteArray,
+                source: Int
+            ) {
                 addAction(CaptureAction(if (isEnc) 0 else 1).also {
                     it.buffer = data
                     it.result = result

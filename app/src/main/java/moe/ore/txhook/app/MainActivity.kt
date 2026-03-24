@@ -324,8 +324,8 @@ private fun HomeTab(
             if (q.isBlank()) allPackets
             else allPackets.filter { pkt ->
                 pkt.cmd.contains(q, ignoreCase = true) ||
-                pkt.seq.toString().contains(q) ||
-                pkt.uin.toString().contains(q)
+                        pkt.seq.toString().contains(q) ||
+                        pkt.uin.toString().contains(q)
             }
         }
     }
@@ -335,8 +335,8 @@ private fun HomeTab(
             if (q.isBlank()) allActions
             else allActions.filter { act ->
                 actionTitle(act).contains(q, ignoreCase = true) ||
-                act.what.toString().contains(q) ||
-                sourceName(act.source).contains(q, ignoreCase = true)
+                        act.what.toString().contains(q) ||
+                        sourceName(act.source).contains(q, ignoreCase = true)
             }
         }
     }
@@ -448,7 +448,7 @@ private fun HomeTab(
 
             Text(
                 text = if (modeTab == 0 && isSearching) "${entries.size}/${totalCount}"
-                       else "${totalCount}",
+                else "${totalCount}",
                 style = MaterialTheme.typography.labelMedium,
                 color = if (modeTab == 0 && isSearching)
                     MaterialTheme.colorScheme.primary
@@ -713,7 +713,8 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val finalText = editingAddress.ifBlank { context.getString(R.string.local_address) }
+                    val finalText =
+                        editingAddress.ifBlank { context.getString(R.string.local_address) }
                     PrefsManager.setString(KEY_PUSH_API, finalText)
                     address = finalText
                     checked = true
@@ -788,7 +789,8 @@ private fun SettingsTab(modifier: Modifier, horizontalPadding: androidx.compose.
                     onCheckedChange = { enabled ->
                         checked = enabled
                         if (enabled) {
-                            editingAddress = address.ifBlank { context.getString(R.string.local_address) }
+                            editingAddress =
+                                address.ifBlank { context.getString(R.string.local_address) }
                             showDialog = true
                         } else {
                             PrefsManager.setString(KEY_PUSH_API, "")

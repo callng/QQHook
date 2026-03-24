@@ -43,13 +43,13 @@ inline fun <C : Closeable, R> C.withUse(block: C.() -> R): R {
     return use(block)
 }
 
-inline fun costTime(block : () -> Unit) : Long {
+inline fun costTime(block: () -> Unit): Long {
     val st = System.currentTimeMillis()
     block()
     return System.currentTimeMillis() - st
 }
 
-fun timeoutEvent(time : Long, block : TimerTask.() -> Unit) : Timer {
+fun timeoutEvent(time: Long, block: TimerTask.() -> Unit): Timer {
     val timer = Timer()
     timer.schedule(object : TimerTask() {
         override fun run() {
@@ -74,7 +74,7 @@ fun Closeable.closeQuietly() {
 }
 
 inline fun <T> T?.ifNotNull(block: (T) -> Unit) {
-    if(this != null) {
+    if (this != null) {
         block.invoke(this)
     }
     // block.invoke(this)

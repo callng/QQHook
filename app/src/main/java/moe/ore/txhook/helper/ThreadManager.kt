@@ -27,7 +27,11 @@ class ThreadManager private constructor(val uin: Long = 0) {
      * 线程池超出界线时将任务加入缓冲队列
      */
     private val handler =
-        RejectedExecutionHandler { task: Runnable, _: ThreadPoolExecutor? -> linkedBlockingQueue.offer(task) }
+        RejectedExecutionHandler { task: Runnable, _: ThreadPoolExecutor? ->
+            linkedBlockingQueue.offer(
+                task
+            )
+        }
     private val threadPool: ThreadPoolExecutor = ThreadPoolExecutor(
         corePoolSize,
         (maxCachePoolSize + corePoolSize),
@@ -135,7 +139,7 @@ class ThreadManager private constructor(val uin: Long = 0) {
         }
 
         @JvmStatic
-        operator fun get(uin: Long) : ThreadManager {
+        operator fun get(uin: Long): ThreadManager {
             return getInstance(uin)
         }
     }

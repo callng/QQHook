@@ -78,11 +78,13 @@ object LoadApp {
                 execStartupInit(app)
 
                 if (ProcUtil.isMain) {
-                    Logger.i("""
+                    Logger.i(
+                        """
                         module version: ${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})
                         hook version: ${hostAppName}-$hostVersionName($hostVersionCode)
                         androidId: $hostAndroidId
-                    """.trimIndent())
+                    """.trimIndent()
+                    )
                 }
             } catch (e: Exception) {
                 Logger.e("HookEntry startup failed", e)
@@ -100,7 +102,11 @@ object LoadApp {
             false
         }
 
-    private fun hookBooleanNoParamMethods(loader: ClassLoader, className: String, hook: XC_MethodHook) {
+    private fun hookBooleanNoParamMethods(
+        loader: ClassLoader,
+        className: String,
+        hook: XC_MethodHook
+    ) {
         val clazz = loader.loadClass(className)
         clazz.declaredMethods
             .filter { it.returnType == Boolean::class.java && it.parameterTypes.isEmpty() }
@@ -111,11 +117,19 @@ object LoadApp {
 
     private fun handleNtQqHook(loader: ClassLoader, hook: XC_MethodHook) {
         val fieldList = arrayListOf<Field>()
-        FuzzySearchClass.findAllClassByField(loader, "com.tencent.mobileqq.startup.task.config") { _, field ->
-            (field.type == HashMap::class.java || field.type == Map::class.java) && Modifier.isStatic(field.modifiers)
+        FuzzySearchClass.findAllClassByField(
+            loader,
+            "com.tencent.mobileqq.startup.task.config"
+        ) { _, field ->
+            (field.type == HashMap::class.java || field.type == Map::class.java) && Modifier.isStatic(
+                field.modifiers
+            )
         }.forEach {
             it.declaredFields.forEach { field ->
-                if ((field.type == HashMap::class.java || field.type == Map::class.java) && Modifier.isStatic(field.modifiers)) {
+                if ((field.type == HashMap::class.java || field.type == Map::class.java) && Modifier.isStatic(
+                        field.modifiers
+                    )
+                ) {
                     fieldList.add(field)
                 }
             }
@@ -139,14 +153,27 @@ object LoadApp {
     private fun entry(loader: ClassLoader, startup: XC_MethodHook) {
         val type = when {
             classExists(loader, "com.tencent.mobileqq.startup.step.LoadDex") -> 1
-            classExists(loader, "com.tencent.qqnt.watch.startup.task.ApplicationCreateStageTask") -> 2
+            classExists(
+                loader,
+                "com.tencent.qqnt.watch.startup.task.ApplicationCreateStageTask"
+            ) -> 2
+
             else -> 0
         }
 
         when (type) {
             0 -> handleNtQqHook(loader, startup)
-            1 -> hookBooleanNoParamMethods(loader, "com.tencent.mobileqq.startup.step.LoadDex", startup)
-            2 -> hookBooleanNoParamMethods(loader, "com.tencent.qqnt.watch.startup.task.ApplicationCreateStageTask", startup)
+            1 -> hookBooleanNoParamMethods(
+                loader,
+                "com.tencent.mobileqq.startup.step.LoadDex",
+                startup
+            )
+
+            2 -> hookBooleanNoParamMethods(
+                loader,
+                "com.tencent.qqnt.watch.startup.task.ApplicationCreateStageTask",
+                startup
+            )
         }
     }
 
@@ -177,7 +204,7 @@ object LoadApp {
 
         val parent = moduleLoader.parent
         val field = ClassLoader::class.java.declaredFields
-            .first { it.name == "parent"}
+            .first { it.name == "parent" }
 
         field.isAccessible = true
         field.set(XPClassloader, parent)
