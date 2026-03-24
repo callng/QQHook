@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20"
 }
 
 val androidMinSdkVersion: Int by rootProject.extra
@@ -123,27 +123,27 @@ androidComponents {
 dependencies {
     compileOnly("de.robv.android.xposed:api:82")
 
-    implementation(platform("androidx.compose:compose-bom:2025.10.01"))
-    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation(platform("androidx.compose:compose-bom:2026.03.00"))
+    implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
-    implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("io.github.kyuubiran.ezxhelper:android-utils:3.1.1-rc1")
     implementation("io.github.kyuubiran.ezxhelper:core:3.1.1-rc1")
     implementation("io.github.kyuubiran.ezxhelper:xposed-api-82:3.1.1-rc1")
     implementation("com.google.code.gson:gson:2.13.2")
-    implementation("com.google.protobuf:protobuf-java:4.34.0")
+    implementation("com.google.protobuf:protobuf-java:4.34.1")
     implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.10.0")
