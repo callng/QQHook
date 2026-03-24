@@ -16,3 +16,4 @@ app/release/
 /app/app/release/
 /app/app/build/
 /app/app/debug/
+/.kotlin/

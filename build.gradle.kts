@@ -9,14 +9,9 @@ import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
 import javax.inject.Inject
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:9.1.0")
-    }
+plugins {
+    id("com.android.application") version "9.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20" apply false
 }
 
 abstract class GitCommandValueSource :

@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20"
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 val androidMinSdkVersion: Int by rootProject.extra
@@ -54,9 +54,8 @@ extensions.configure<ApplicationExtension> {
     }
 
     buildFeatures {
-        viewBinding = false
-        compose = true
         buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -147,6 +146,5 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-io-jvm:0.1.16")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.10.0")
-    implementation("com.rengwuxian.materialedittext:library:2.1.4")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
 }
