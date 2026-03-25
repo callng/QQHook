@@ -38,3 +38,4 @@ plugins {
 rootProject.name = "TXHook"
 
 include(":app")
+include(":libs:qqstub")

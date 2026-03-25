@@ -82,7 +82,7 @@ fun Class<*>?.hookMethod(funName: String?): XposedMethodHook? {
     }
 }
 
-fun Class<*>?.hookMethod(funName: String?, vararg args: Class<*>): XposedMethodHook? {
+fun Class<*>?.hookMethod(funName: String?, vararg args: Any?): XposedMethodHook? {
     return try {
         val hook = XposedMethodHook()
 

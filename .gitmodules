@@ -1,0 +1,3 @@
+[submodule "libs/qqstub"]
+	path = libs/qqstub
+	url = https://github.com/callng/qqStub

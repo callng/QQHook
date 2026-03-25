@@ -6,6 +6,9 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
+import com.tencent.mobileqq.channel.ChannelProxyExt
+import com.tencent.mobileqq.fe.EventCallback
+import com.tencent.mobileqq.sign.QQSecuritySign
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedBridge
@@ -24,10 +27,14 @@ import moe.ore.xposed.utils.HookUtil
 import moe.ore.xposed.utils.HttpUtil
 import moe.ore.xposed.utils.PacketDedupCache
 import moe.ore.xposed.utils.QQ_9_2_10_29175
+import moe.ore.xposed.utils.QQ_9_2_60_GRAY_ONE_VER
 import moe.ore.xposed.utils.XPClassloader
+import moe.ore.xposed.utils.fastprotobuf.ProtoUtils
+import moe.ore.xposed.utils.fastprotobuf.asUtf8String
 import moe.ore.xposed.utils.getPatchBuffer
 import moe.ore.xposed.utils.hookMethod
 import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.nio.ByteBuffer
 
 object MainHook {
@@ -69,6 +76,7 @@ object MainHook {
         HttpUtil.contextWeakReference = java.lang.ref.WeakReference(ctx)
         this.source = source
 
+        dispatchEventHook()
         hookMSFKernelPacket()
         hookCodecWarpperInit()
         hookMD5()
@@ -97,6 +105,67 @@ object MainHook {
 
     // ==================== MSF Kernel Packet ====================
 
+    private fun dispatchEventHook() {
+        QQSecuritySign::class.java.hookMethod(
+            "dispatchEvent",
+            String::class.java,
+            String::class.java,
+            EventCallback::class.java
+        )!!.before { param ->
+            val eventName = param.args[0] as String
+            val eventData = param.args[1] as String
+
+            (param.args[2] as? EventCallback)?.let { originalCallback ->
+                val proxy = Proxy.newProxyInstance(
+                    originalCallback.javaClass.classLoader,
+                    arrayOf(EventCallback::class.java)
+                ) { _, method, args ->
+                    if (method.name == "onResult" && args != null && args.size == 2) {
+                        val code = args[0] as Int
+                        val result = (args[1] as ByteArray).toString(Charsets.UTF_8)
+
+                        if (!result.isEmpty()) {
+                            sendTo("dispatchEvent") {
+                                put("eventName", eventName)
+                                put("eventData", eventData)
+                                put("code", code)
+                                put("result", result)
+                            }
+                        }
+                    }
+
+                    method.invoke(originalCallback, *(args ?: emptyArray()))
+                }
+
+                param.args[2] = proxy
+            }
+        }
+
+        val method = "sendMessageInner".takeIf {
+            QQTypeEnum.valueOfPackage(hostPackageName) == QQTypeEnum.QQ &&
+                    hostVersionCode >= QQ_9_2_60_GRAY_ONE_VER
+        } ?: "sendMessage"
+
+        ChannelProxyExt::class.java.hookMethod(
+            method,
+            String::class.java,
+            ByteArray::class.java,
+            Long::class.javaPrimitiveType
+        )!!.before { param ->
+            val cmd = param.args[0] as String
+            val body = param.args[1] as ByteArray
+            val callbackId = param.args[2] as Long
+            val bcmd = ProtoUtils.decodeFromByteArray(body)[1].asUtf8String
+
+            sendTo("sendMessage") {
+                put("cmd", cmd)
+                put("bcmd", bcmd)
+                put("callbackId", callbackId)
+                put("body", body.toHexString())
+            }
+        }
+    }
+
     private fun hookMSFKernelPacket() {
         if (QQTypeEnum.valueOfPackage(hostPackageName) == QQTypeEnum.QQ &&
             hostVersionCode > QQ_9_2_10_29175
@@ -110,7 +179,7 @@ object MainHook {
         FuzzySearchClass.findClassWithMethod(
             classLoader = hostClassLoader,
             packagePrefix = "com.tencent.mobileqq.msf.core",
-            innerClassPath = "c.b\$e",
+            innerClassPath = $$"c.b$e",
             methodName = "onMSFPacketState",
             parameterTypes = arrayOf(
                 XPClassloader.load("com.tencent.mobileqq.msfcore.MSFResponseAdapter")!!

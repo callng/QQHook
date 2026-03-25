@@ -10,8 +10,8 @@ import java.nio.charset.Charset
 import javax.inject.Inject
 
 plugins {
-    id("com.android.application") version "9.1.0" apply false
-    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20" apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.library) apply false
 }
 
 abstract class GitCommandValueSource :
