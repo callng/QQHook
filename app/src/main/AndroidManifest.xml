@@ -9,7 +9,6 @@
         android:icon="@mipmap/ic_launcher"
         android:label="TXHook"
         android:largeHeap="true"
-        android:multiArch="true"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/AppTheme">
