@@ -1,6 +1,6 @@
 [versions]
 agp = "9.1.0"
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 
 androidx-core-ktx = "1.18.0"
 androidx-fragment = "1.8.9"
@@ -16,10 +16,10 @@ compose-window-size = "1.4.0"
 
 ezxhelper = "3.1.1-rc1"
 xposed-api = "82"
-gson = "2.13.2"
+gson = "2.14.0"
 protobuf-java = "4.34.1"
 kotlinx-io = "0.1.16"
-kotlinx-serialization = "1.10.0"
+kotlinx-serialization = "1.11.0"
 okhttp = "5.3.2"
 
 [libraries]
