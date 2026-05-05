@@ -14,7 +14,7 @@ activity-compose = "1.13.0"
 lifecycle-runtime-compose = "2.10.0"
 compose-window-size = "1.4.0"
 
-ezxhelper = "3.1.1-rc1"
+ezxhelper = "3.2.0-preview1"
 xposed-api = "82"
 gson = "2.14.0"
 protobuf-java = "4.34.1"
