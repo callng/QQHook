@@ -4,3 +4,4 @@ const val QQ_9_1_90_26520 = 10248L
 const val QQ_9_1_90_26530 = 10252L
 const val QQ_9_2_10_29175 = 11310L
 const val QQ_9_2_60_GRAY_ONE_VER = 12968L
+const val QQ_9_3_0_BATE_36720 = 14328L

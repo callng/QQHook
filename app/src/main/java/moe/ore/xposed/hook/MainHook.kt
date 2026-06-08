@@ -28,6 +28,7 @@ import moe.ore.xposed.utils.HttpUtil
 import moe.ore.xposed.utils.PacketDedupCache
 import moe.ore.xposed.utils.QQ_9_2_10_29175
 import moe.ore.xposed.utils.QQ_9_2_60_GRAY_ONE_VER
+import moe.ore.xposed.utils.QQ_9_3_0_BATE_36720
 import moe.ore.xposed.utils.XPClassloader
 import moe.ore.xposed.utils.fastprotobuf.ProtoUtils
 import moe.ore.xposed.utils.fastprotobuf.asUtf8String
@@ -176,15 +177,20 @@ object MainHook {
     }
 
     private fun hookMSFKernelReceive() {
-        FuzzySearchClass.findClassWithMethod(
-            classLoader = hostClassLoader,
-            packagePrefix = "com.tencent.mobileqq.msf.core",
-            innerClassPath = $$"c.b$e",
-            methodName = "onMSFPacketState",
-            parameterTypes = arrayOf(
-                XPClassloader.load("com.tencent.mobileqq.msfcore.MSFResponseAdapter")!!
+        val clazz = if (hostVersionCode >= QQ_9_3_0_BATE_36720) {
+            XPClassloader.load($$"com.tencent.mobileqq.msf.core.service.crossplatform.b$e")
+        } else {
+            FuzzySearchClass.findClassWithMethod(
+                classLoader = hostClassLoader,
+                packagePrefix = "com.tencent.mobileqq.msf.core",
+                innerClassPath = $$"c.b$e",
+                methodName = "onMSFPacketState",
+                parameterTypes = arrayOf(
+                    XPClassloader.load("com.tencent.mobileqq.msfcore.MSFResponseAdapter")!!
+                )
             )
-        )?.hookMethod("onMSFPacketState")?.after {
+        }
+        clazz?.hookMethod("onMSFPacketState")?.after {
             val from = it.args[0]
             val cmd = from.getField<String>("mCmd")
             val seq = from.getField<Int>("mSeq")
